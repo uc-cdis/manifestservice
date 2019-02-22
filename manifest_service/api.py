@@ -3,14 +3,15 @@ import logging
 import time
 
 from . import auth
+from . import dev_settings
 from .errors import AuthZError, JWTError
 from .admin_endpoints import blueprint as admin_bp
-from .some_endpoints import blueprint as some_bp
+from .manifests import blueprint as manifests_bp
 
 
 app = flask.Flask(__name__)
 app.register_blueprint(admin_bp, url_prefix="/admin")
-app.register_blueprint(some_bp, url_prefix="/something")
+app.register_blueprint(manifests_bp, url_prefix="")
 
 
 @app.route("/user_endpoint", methods=["GET"])
