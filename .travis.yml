@@ -9,9 +9,7 @@ cache:
 
 # install dependencies
 install:
-  - virtualenv -p python3 manifest_service_env
-  - source manifest_service_env/bin/activate
-  - pip3 install  -r requirements.txt
+  - pipenv install
 
 # run tests
 script:
