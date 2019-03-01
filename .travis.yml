@@ -9,9 +9,11 @@ cache:
 
 # install dependencies
 install:
+  - pip install pipenv
   - pipenv install
+  - pipenv graph
 
 # run tests
 script:
-  - cd tests && ls
+  - cd tests
   - pytest
