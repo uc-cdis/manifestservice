@@ -20,29 +20,10 @@ def create_app():
     #     app_init(app)
     # except:
     #     app.logger.exception("Couldn't initialize application, continuing anyway")
-    
+
     return app
 
 app = create_app()
-
-@app.route("/user_endpoint", methods=["GET"])
-def do_something_connected():
-    """
-    User endpoint
-    ---
-    responses:
-        200:
-            description: Success
-        401:
-            description: Unauthorized
-    """
-    token = flask.request.headers.get("Authorization")
-    try:
-        user = auth.current_user  # raises error if user is not connected
-        return "Success! User is {}".format(user.username), 200
-    except JWTError as e:
-        return e.message, e.code
-
 
 @app.route("/_status", methods=["GET"])
 def health_check():

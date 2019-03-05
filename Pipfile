@@ -5,13 +5,13 @@ verify_ssl = true
 
 [dev-packages]
 pytest="*"
+pytest-mock = "*"
+pytest-flask = "*"
 
 [packages]
 flask = "*"
 authutils = "*"
 boto3 = "*"
-pytest-mock = "*"
-pytest-flask = "*"
 
 [requires]
 python_version = "3.7"
