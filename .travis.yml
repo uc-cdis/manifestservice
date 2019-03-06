@@ -10,7 +10,7 @@ cache:
 # install dependencies
 install:
   - pip install pipenv
-  - pipenv install
+  - pipenv install --dev
   - pipenv graph
 
 # run tests
