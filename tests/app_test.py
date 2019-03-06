@@ -6,6 +6,8 @@ from manifest_service import manifests
 
 from manifest_service.api import create_app
 
+mocks = {}
+
 @pytest.fixture
 def app(mocker):
 	test_user = {
@@ -24,7 +26,18 @@ def app(mocker):
 		'sub': '18'
 	}
 
-	mocker.patch("manifest_service.manifests.validate_request", return_value=test_user)
+	mocks['validate_request'] = mocker.patch("manifest_service.manifests.validate_request", return_value=test_user)
+
+	mocks['list_files_in_bucket'] = mocker.patch("manifest_service.manifests.list_files_in_bucket", return_value=['manifest-a-b-c.json'])
+
+	# mocks['add_manifest_to_bucket'] = mocker.patch("manifest_service.manifests.add_manifest_to_bucket", return_value='manifest-a-b-c.json')
+
+	#mocks['boto3'] = mocker.patch("manifest_service.manifests.boto3.Session", return_value="foo")
+	#mocks['boto3.Session'] = mocker.patch("manifest_service.manifests.boto3.Session")
+	#mocks['s3'] = mocker.patch("manifest_service.manifests.s3")
+	mocks['s3.Object'] = mocker.patch("manifest_service.manifests.s3.Object")
+
+	mocks['get_file_contents'] = mocker.patch("manifest_service.manifests.get_file_contents", return_value='')
 
 	app = create_app()
 	return app
@@ -137,7 +150,6 @@ def test_POST_handles_invalid_manifest_keys(client):
 	r = client.post("/", json=test_manifest, headers=headers)
 	assert r.status_code == 400
 
-@pytest.mark.skip(reason="This is an integration test because it requires s3 credentials. I would rather keep this good test intact than mock s3.")
 def test_POST_successful_manifest_upload(client):
 	import random
 
@@ -146,89 +158,33 @@ def test_POST_successful_manifest_upload(client):
 	
 	headers = {'Content-Type': 'application/json', 'Accept':'application/json'}
 	r = client.post("/", data=json_utils.dumps(test_manifest), headers=headers)
-	print(r.data)
-	assert r.status_code == 200
 	
+	assert r.status_code == 200
+	assert mocks['validate_request'].call_count == 1
+	assert mocks['s3.Object'].call_count == 1
+	assert mocks['list_files_in_bucket'].call_count == 1	# To generate a unique filename, the code should check the bucket
+	assert mocks['get_file_contents'].call_count == 0
+
 	json = r.json
 	new_filename = json['filename']
+	
 	assert new_filename is not None
 	assert type(new_filename) is str
-	assert len(new_filename) > 1
-
-	# Check that the new manifest is in the bucket
+	
 	r = client.get("/", headers=headers)
 	assert r.status_code == 200
+	assert mocks['validate_request'].call_count == 2
+	assert mocks['s3.Object'].call_count == 1
+	assert mocks['list_files_in_bucket'].call_count == 2
+	assert mocks['get_file_contents'].call_count == 0
 
 	json = r.json
 	manifest_files = json['manifests']
 	assert type(manifest_files) is list
-	assert len(manifest_files) > 0
-	assert new_filename in manifest_files
 
-	# Read the body of the manifest and make sure the contents is what we posted
 	r = client.get("/file/" + new_filename, headers=headers)
 	assert r.status_code == 200
-	json = r.json
-	response_manifest = json_utils.loads(json['body'])
-
-	assert response_manifest == test_manifest
-
-@pytest.mark.skip(reason="This test is difficult to automate and will be tested by an integration test anyway.")
-def test_GET_fails_if_access_token_missing_or_invalid(manifest_service_hostname):
-	headers = {'Content-Type': 'application/json', 'Accept':'application/json'}
-	cookies = {}
-	r = client.get("/", headers=headers)
-	assert r.status_code == 403
-
-	cookies = {'access_token' : 'abc'}
-	r = client.get("/", headers=headers)
-	assert r.status_code == 403
-
-@pytest.mark.skip(reason="This test is difficult to automate and will be tested by an integration test anyway.")
-def test_POST_fails_if_access_token_missing_or_invalid(client):
-	headers = {'Content-Type': 'application/json', 'Accept':'application/json'}
-	test_manifest = [{ "subject_id" : 44 , "object_id" : 88 }]
-
-	cookies = {}
-	r = client.post("/", json=test_manifest, headers=headers, cookies=cookies)
-	assert r.status_code == 403
-
-	cookies = {'access_token' : 'abc'}
-	r = client.post("/", json=test_manifest, headers=headers, cookies=cookies)
-	assert r.status_code == 403
-
-@pytest.mark.skip(reason="This test is difficult to automate and will be tested by an integration test anyway.")
-def test_folder_creation_with_multiple_users(client, api_key_one, api_key_two, fence_hostname):
-	""" 
-	In particular, users should never see each others' manifests.
-	Or even know that we're making folders for them.
-	"""
-	
-	test_manifest = [{ "subject_id" : 44 , "object_id" : 88 }]
-	headers = {'Content-Type': 'application/json', 'Accept':'application/json'}
-
-	# User 1 POST
-	cookies_user_1 = {'access_token' : get_me_an_access_token(api_key_one, fence_hostname) }
-	r = client.post("/", json=test_manifest, headers=headers, cookies=cookies_user_1)
-	json = r.json()
-	user_1_filename = json['filename']
-
-	# User 2 POST -- notice that we're using the other api_key (from another account)
-	cookies_user_2 = {'access_token' : get_me_an_access_token(api_key_two, fence_hostname) }
-	r = client.post("/", json=test_manifest, headers=headers, cookies=cookies_user_2)
-	json = r.json()
-	user_2_filename = json['filename']
-
-	# User 1 GET
-	r = client.get("/", headers=headers, cookies=cookies_user_1)
-	json = r.json()
-	manifest_files = json['manifests']
-	assert user_1_filename in manifest_files
-	assert user_2_filename not in manifest_files
-
-	# User 2 GET
-	r = client.get("/", headers=headers, cookies=cookies_user_2)
-	json = r.json()
-	manifest_files = json['manifests']
-	assert user_2_filename in manifest_files
-	assert user_1_filename not in manifest_files
+	assert mocks['validate_request'].call_count == 3
+	assert mocks['s3.Object'].call_count == 1
+	assert mocks['list_files_in_bucket'].call_count == 2
+	assert mocks['get_file_contents'].call_count == 1

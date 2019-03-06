@@ -18,6 +18,5 @@ script:
   - cd tests
   - python -m pytest -v
 
-# run tests
 after_script:
   - pipenv run python-codacy-coverage -r coverage.xml
