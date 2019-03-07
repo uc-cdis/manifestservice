@@ -28,7 +28,7 @@ def app(mocker):
 
 	mocks['validate_request'] = mocker.patch("manifest_service.manifests.validate_request", return_value=test_user)
 
-	mocks['list_files_in_bucket'] = mocker.patch("manifest_service.manifests.list_files_in_bucket", return_value=['manifest-a-b-c.json'])
+	mocks['list_files_in_bucket'] = mocker.patch("manifest_service.manifests.list_files_in_bucket", return_value=[{ 'filename':'manifest-a-b-c.json' } ])
 
 	# mocks['add_manifest_to_bucket'] = mocker.patch("manifest_service.manifests.add_manifest_to_bucket", return_value='manifest-a-b-c.json')
 

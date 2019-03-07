@@ -78,7 +78,8 @@ def generate_unique_manifest_filename(folder_name, manifest_bucket_name):
     """
     timestamp = datetime.now().isoformat()
     users_existing_manifest_files = list_files_in_bucket(manifest_bucket_name, folder_name)
-    filename = generate_unique_filename_with_timestamp_and_increment(timestamp, users_existing_manifest_files)
+    existing_filenames = map(lambda x: x['filename'], users_existing_manifest_files)
+    filename = generate_unique_filename_with_timestamp_and_increment(timestamp, existing_filenames)
     return filename
 
 def generate_unique_filename_with_timestamp_and_increment(timestamp, users_existing_manifest_files):
@@ -108,8 +109,11 @@ def list_files_in_bucket(bucket_name, folder):
     bucket = s3.Bucket(bucket_name)
 
     for object_summary in bucket.objects.filter(Prefix=folder + "/"):
-        rv.append(ntpath.basename(object_summary.key))
-    
+        manifest_summary = {
+            "filename" : ntpath.basename(object_summary.key),
+            "last_modified" : object_summary.last_modified.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        rv.append(manifest_summary)
     return rv
 
 def get_file_contents(bucket_name, folder, filename):
