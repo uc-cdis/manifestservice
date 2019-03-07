@@ -9,10 +9,10 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name="manifest_service",
+    name="manifestservice",
     version="0.0.1",
     description="Gen3 service template",
-    url="https://github.com/uc-cdis/manifest_service",
+    url="https://github.com/uc-cdis/manifestservice",
     license="Apache",
     packages=find_packages(),
 

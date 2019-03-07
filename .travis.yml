@@ -10,12 +10,13 @@ cache:
 # install dependencies
 install:
   - pip install pipenv
-  - pipenv install --dev
+  - pipenv install --skip-lock --dev
   - pipenv graph
 
 # run tests
 script:
   - cd tests
+  - export MANIFEST_SERVICE_CONFIG_PATH=../config.json
   - python -m pytest -v
 
 after_script:

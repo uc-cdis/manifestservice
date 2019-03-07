@@ -4,7 +4,7 @@ import yaml
 from flasgger import Swagger, Flasgger
 from yaml.representer import Representer
 
-from manifest_service.api import app
+from manifestservice.api import app
 from openapi.app_info import app_info
 
 
