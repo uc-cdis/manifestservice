@@ -15,5 +15,4 @@ setup(
     url="https://github.com/uc-cdis/manifestservice",
     license="Apache",
     packages=find_packages(),
-
 )
