@@ -6,6 +6,8 @@ import ntpath
 from datetime import date, datetime
 from authutils.token.validate import current_token, validate_request, set_current_token
 from authutils import user as authutils_user
+from cdislogging import get_logger
+logger = get_logger('manifestservice_logger')
 
 blueprint = flask.Blueprint("manifests", __name__)
 
@@ -264,7 +266,7 @@ def _list_files_in_bucket(bucket_name, folder):
             }
             rv.append(manifest_summary)
     except Exception as e:
-        print(e)
+        logger.error(e)
         return str(e), False
 
     return rv, True
@@ -293,7 +295,7 @@ def _authenticate_user():
     try:
         set_current_token(validate_request(aud={"user"}))
     except Exception as e:
-        print(e)
+        logger.error(e)
         json_to_return = {"error": "Please log in."}
         return flask.jsonify(json_to_return), 403
 
@@ -302,7 +304,7 @@ def _authenticate_user():
             authutils_user.current_user.projects
         )
     except Exception as e:
-        print(e)
+        logger.error(e)
         json_to_return = {
             "error": "You must have read access on at least one project in order to use this feature."
         }
