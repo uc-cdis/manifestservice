@@ -1,2 +1,3 @@
-from manifest_service.api import app
+from manifestservice.api import app
+
 application = app

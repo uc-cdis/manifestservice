@@ -1,14 +1,14 @@
-# To run: docker run -v /path/to/wsgi.py:/var/www/manifest_service/wsgi.py --name=manifest_service -p 81:80 manifest_service
-# To check running container: docker exec -it manifest_service /bin/bash
-
+# To run: docker run -v /path/to/wsgi.py:/var/www/manifestservice/wsgi.py --name=manifestservice -p 81:80 manifestservice
+# To check running container: docker exec -it manifestservice /bin/bash
 
 FROM quay.io/cdis/python-nginx:master
 
-
-ENV appname=manifest_service
+ENV appname=manifestservice
 
 # number of uwsgi worker processes
 ENV UWSGI_CHEAPER 2
+
+ENV WORKON_HOME=/.venv
 
 RUN apk update \
     && apk add postgresql-libs postgresql-dev libffi-dev libressl-dev \
@@ -22,9 +22,7 @@ COPY ./deployment/nginx/nginx.conf /etc/nginx/
 COPY ./deployment/nginx/uwsgi.conf /etc/nginx/conf.d/nginx.conf
 WORKDIR /$appname
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install --upgrade setuptools \
-    && pip install -r requirements.txt --src /usr/local/lib/python3.6/site-packages/
+RUN python -m pip install --upgrade pip && pip install pipenv && pipenv install
 
 RUN mkdir -p /var/www/$appname \
     && mkdir -p /var/www/.cache/Python-Eggs/ \

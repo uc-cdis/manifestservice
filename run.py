@@ -1,4 +1,4 @@
-from manifest_service.api import run_for_development
+from manifestservice.api import run_for_development
 
 
 if __name__ == "__main__":

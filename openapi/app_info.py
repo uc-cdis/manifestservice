@@ -1,8 +1,8 @@
 app_info = {
     "swagger": "2.0",
     "info": {
-        "title": "Service template OpenAPI Specification",
-        "description": "A service template for CDIS Gen 3 data commons. Code is available on [GitHub](https://github.com/uc-cdis/template-repo).",
+        "title": "Manifest Service OpenAPI Specification",
+        "description": "A microservice that facilitates manifest creation and retrieval. Code is available on [GitHub](https://github.com/uc-cdis/manifestservice).",
         "version": "1.0",
         "termsOfService": "http://cdis.uchicago.edu/terms/",
         "contact": {"email": "cdis@uchicago.edu"},
