@@ -43,6 +43,44 @@ def get_manifests():
 
     return flask.jsonify(json_to_return), 200
 
+@blueprint.route("/latest", methods=["GET"])
+def get_latest_manifest():
+    """
+    Returns the latest manifest file from user's folder/
+    ---
+    responses:
+        200:
+            description: Success
+        403:
+            description: Unauthorized
+        404:
+            description: No manifest is found
+    """
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+
+
+    folder_name = _get_folder_name_from_token(current_token)
+
+    result, ok = _list_files_in_bucket(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
+    )
+    if not ok:
+        json_to_return = {"error": "Currently unable to connect to s3."}
+        return flask.jsonify(json_to_return), 500
+    if not result:
+        return flask.jsonify({"error": "No manifest is found"}), 404
+    
+    latest = sorted(result, key=lambda i : i['last_modified'])[-1]
+    json_to_return = {
+        "body": _get_file_contents(
+            flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, latest['filename']
+        )
+    }
+
+    return flask.jsonify(json_to_return), 200
+
 
 @blueprint.route("/file/<file_name>", methods=["GET"])
 def get_manifest_file(file_name):
