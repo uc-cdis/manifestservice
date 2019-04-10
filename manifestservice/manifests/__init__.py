@@ -73,13 +73,9 @@ def get_manifest_file(file_name):
 
     folder_name = _get_folder_name_from_token(current_token)
 
-    json_to_return = {
-        "body": _get_file_contents(
+    return _get_file_contents(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
         )
-    }
-
-    return flask.jsonify(json_to_return), 200
 
 
 @blueprint.route("/", methods=["PUT", "POST"])
