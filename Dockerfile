@@ -38,4 +38,4 @@ RUN COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >$appname/version
 
 WORKDIR /var/www/$appname
 
-CMD /dockerrun.sh
+CMD bash -c 'VENV="$(cd /manifestservice && pipenv --venv)" /dockerrun.sh'
