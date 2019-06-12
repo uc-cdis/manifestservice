@@ -20,7 +20,7 @@ COPY ./deployment/uwsgi/uwsgi.ini /etc/uwsgi/uwsgi.ini
 COPY ./deployment/uwsgi/wsgi.py /$appname/wsgi.py
 WORKDIR /$appname
 
-RUN python -m pip install --upgrade pip && pip install pipenv && pipenv install
+RUN python -m pip install --upgrade pip && pip install pipenv && pipenv install --system --deploy
 
 RUN mkdir -p /var/www/$appname \
     && mkdir -p /var/www/.cache/Python-Eggs/ \
@@ -38,4 +38,4 @@ RUN COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >$appname/version
 
 WORKDIR /var/www/$appname
 
-CMD bash -c 'VENV="$(cd /manifestservice && pipenv --venv)" /dockerrun.sh'
+CMD /dockerrun.sh
