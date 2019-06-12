@@ -27,6 +27,7 @@ def create_app():
     for key in config_dict:
         app.config[key] = config_dict[key]
 
+    app.config['USER_API'] = os.environ.get('FENCE_URL') or 'http://fence-service/'
     app.config["OIDC_ISSUER"] = "https://%s/user" % config_dict["hostname"]
     app.config["MANIFEST_BUCKET_NAME"] = config_dict["manifest_bucket_name"]
 
