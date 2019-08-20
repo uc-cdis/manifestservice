@@ -10,7 +10,7 @@ pytest-mock="~=1.10"
 pytest-flask="~=0.14.0"
 
 [packages]
-flask="~=0.10"
+flask="~=1.0"
 authutils="~=3.0"
 boto3="~=1.9"
 
