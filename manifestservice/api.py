@@ -31,7 +31,8 @@ def create_app():
     # use the USER_API URL instead of the public issuer URL to accquire JWT keys
     app.config["FORCE_ISSUER"] = True
 
-    app.config["HOSTNAME"] = config_dict["hostname"]
+    # If prefix is set, user folders will be stored in a directory named PREFIX
+    app.config["PREFIX"] = config_dict["prefix"]
     app.config["OIDC_ISSUER"] = "https://%s/user" % config_dict["hostname"]
     app.config["MANIFEST_BUCKET_NAME"] = config_dict["manifest_bucket_name"]
 

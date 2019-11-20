@@ -169,7 +169,10 @@ def _get_folder_name_from_token(user_info):
 
     According to the revproxy's helpers.js, it looks like the user_id is stored in a variable called "sub". Hm. 
     """
-    return app.config["HOSTNAME"] + "-user-" + str(user_info["sub"])
+    result =  "user-" + str(user_info["sub"])
+    if "PREFIX" in app.config:
+        result =  app.config["PREFIX"] + "/user-" + str(user_info["sub"])
+    return result
 
 
 def _does_the_user_have_read_access_on_at_least_one_project(project_access_dict):
