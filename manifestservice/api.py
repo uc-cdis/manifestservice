@@ -32,7 +32,8 @@ def create_app():
     app.config["FORCE_ISSUER"] = True
 
     # If prefix is set, user folders will be stored in a directory named PREFIX
-    app.config["PREFIX"] = config_dict["prefix"]
+    if "prefix" in config_dict and config_dict["prefix"] != "":
+        app.config["PREFIX"] = config_dict["prefix"]
     app.config["OIDC_ISSUER"] = "https://%s/user" % config_dict["hostname"]
     app.config["MANIFEST_BUCKET_NAME"] = config_dict["manifest_bucket_name"]
 
