@@ -27,11 +27,11 @@ def create_app():
     for key in config_dict:
         app.config[key] = config_dict[key]
 
-    app.config['USER_API'] = os.environ.get('FENCE_URL') or 'http://fence-service/'
+    app.config["USER_API"] = os.environ.get("FENCE_URL") or "http://fence-service/"
     # use the USER_API URL instead of the public issuer URL to accquire JWT keys
-    app.config['FORCE_ISSUER'] = True
+    app.config["FORCE_ISSUER"] = True
 
-    app.config['HOSTNAME'] = config_dict["hostname"]
+    app.config["HOSTNAME"] = config_dict["hostname"]
     app.config["OIDC_ISSUER"] = "https://%s/user" % config_dict["hostname"]
     app.config["MANIFEST_BUCKET_NAME"] = config_dict["manifest_bucket_name"]
 
