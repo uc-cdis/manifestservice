@@ -122,6 +122,55 @@ def put_manifest():
 
     return flask.jsonify(ret), 200
 
+@blueprint.route("/cohorts", methods=["PUT", "POST"])
+def put_pfb_guid():
+    """
+    Add PFB GUID to s3 bucket.
+    Will create a new file named with the value of the GUID for the PFB in the user's s3 folder
+    ---
+    responses:
+        200:
+            description: Success
+        403:
+            description: Unauthorized
+        400:
+            description: Bad GUID format
+    """
+
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+
+    print('got json: ')
+    print(flask.request.json)
+
+    if not flask.request.json:
+        return flask.jsonify({"error": "Please provide valid JSON."}), 400
+
+    post_body = flask.request.json
+    print(post_body)
+    GUID = post_body["cohort_guid"]
+    is_valid = is_valid_GUID(GUID)
+    
+    if not is_valid:
+        return (
+            flask.jsonify(
+                {
+                    "error": "The provided GUID: {} is invalid.".format(GUID)
+                }
+            ),
+            400,
+        )
+
+    result, ok = _add_GUID_to_bucket(current_token, GUID)
+    if not ok:
+        json_to_return = {"error": "Currently unable to connect to s3."}
+        return flask.jsonify(json_to_return), 500
+
+    ret = {"filename": result}
+
+    return flask.jsonify(ret), 200
+
 
 def _add_manifest_to_bucket(current_token, manifest_json):
     """
@@ -158,6 +207,46 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         return str(e), False
 
     return filename, True
+
+
+def _add_GUID_to_bucket(current_token, GUID):
+    """
+    
+    """
+    session = boto3.Session(
+        region_name="us-east-1",
+        aws_access_key_id=app.config["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=app.config["AWS_SECRET_ACCESS_KEY"],
+    )
+    s3 = session.resource("s3")
+
+    folder_name = _get_folder_name_from_token(current_token)
+
+    existing_files, ok = _list_files_in_bucket(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
+    )
+    if not ok:
+        return result, False
+
+    # filename = _generate_unique_manifest_filename(
+    #     folder_name, flask.current_app.config.get("MANIFEST_BUCKET_NAME"), result
+    # )
+
+    if GUID in existing_files:
+        return GUID, True
+    
+    filepath_in_bucket = folder_name + "/cohorts/" + GUID
+
+    try:
+        obj = s3.Object(
+            flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
+        )
+        response = obj.put(Body=manifest_as_bytes)
+    except Exception as e:
+        return str(e), False
+
+    return filename, True
+
 
 
 def _get_folder_name_from_token(user_info):
@@ -310,3 +399,6 @@ def _authenticate_user():
         return flask.jsonify(json_to_return), 403
 
     return None, None
+
+def is_valid_GUID(GUID):
+    return True
