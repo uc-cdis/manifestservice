@@ -1,6 +1,7 @@
 import flask
 import boto3
 from flask import current_app as app
+import re
 import requests
 import ntpath
 from datetime import date, datetime
@@ -228,10 +229,6 @@ def _add_GUID_to_bucket(current_token, GUID):
     if not ok:
         return result, False
 
-    # filename = _generate_unique_manifest_filename(
-    #     folder_name, flask.current_app.config.get("MANIFEST_BUCKET_NAME"), result
-    # )
-
     if GUID in existing_files:
         return GUID, True
     
@@ -241,7 +238,7 @@ def _add_GUID_to_bucket(current_token, GUID):
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        response = obj.put(Body=manifest_as_bytes)
+        response = obj.put(Body=None)
     except Exception as e:
         return str(e), False
 
@@ -401,4 +398,6 @@ def _authenticate_user():
     return None, None
 
 def is_valid_GUID(GUID):
-    return True
+    regex = re.compile('[a-zA-Z0-9./-]*s', re.I)
+    match = regex.match(str(input_string))
+    return bool(match)
