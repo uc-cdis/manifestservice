@@ -164,11 +164,14 @@ def put_pfb_guid():
         )
     print('165')
     result, ok = _add_GUID_to_bucket(current_token, GUID)
+    print('167')
     if not ok:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
     ret = {"filename": result}
+    print('171')
+    print(ret)
 
     return flask.jsonify(ret), 200
 
@@ -231,18 +234,21 @@ def _add_GUID_to_bucket(current_token, GUID):
     print(existing_files)
     if not ok:
         return result, False
-
+    print("234")
     if GUID in existing_files:
         return GUID, True
     
     filepath_in_bucket = folder_name + "/cohorts/" + GUID
-
+    print(filepath_in_bucket)
     try:
+        print('241')
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
+        print('245')
         response = obj.put(Body=None)
     except Exception as e:
+        print('246')
         return str(e), False
 
     return filename, True
