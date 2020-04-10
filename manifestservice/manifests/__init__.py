@@ -245,7 +245,6 @@ def _add_GUID_to_bucket(current_token, GUID):
     return filename, True
 
 
-
 def _get_folder_name_from_token(user_info):
     """
     Returns the name of the user's manifest folder (their "prefix").
@@ -397,7 +396,8 @@ def _authenticate_user():
 
     return None, None
 
+
 def is_valid_GUID(GUID):
     regex = re.compile('[a-zA-Z0-9./-]*s', re.I)
-    match = regex.match(str(input_string))
+    match = regex.match(str(GUID))
     return bool(match)
