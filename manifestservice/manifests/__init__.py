@@ -248,7 +248,7 @@ def _add_GUID_to_bucket(current_token, GUID):
         print('245')
         response = obj.put(Body=None)
     except Exception as e:
-        print('246')
+        print('246', str(e))
         return str(e), False
 
     return filename, True
