@@ -246,7 +246,7 @@ def _add_GUID_to_bucket(current_token, GUID):
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
         print('245')
-        response = obj.put(Body=None)
+        response = obj.put(Body=str.encode(''))
     except Exception as e:
         print('246', str(e))
         return str(e), False
