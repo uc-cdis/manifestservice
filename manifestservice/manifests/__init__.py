@@ -251,7 +251,7 @@ def _add_GUID_to_bucket(current_token, GUID):
         print('246', str(e))
         return str(e), False
 
-    return filename, True
+    return GUID, True
 
 
 def _get_folder_name_from_token(user_info):
