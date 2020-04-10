@@ -162,7 +162,7 @@ def put_pfb_guid():
             ),
             400,
         )
-
+    print('165')
     result, ok = _add_GUID_to_bucket(current_token, GUID)
     if not ok:
         json_to_return = {"error": "Currently unable to connect to s3."}
@@ -222,10 +222,13 @@ def _add_GUID_to_bucket(current_token, GUID):
     s3 = session.resource("s3")
 
     folder_name = _get_folder_name_from_token(current_token)
+    print(folder_name)
 
     existing_files, ok = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
+
+    print(existing_files)
     if not ok:
         return result, False
 
