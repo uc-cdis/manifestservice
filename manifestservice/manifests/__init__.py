@@ -331,23 +331,29 @@ def _list_files_in_bucket(bucket_name, folder):
     )
     s3 = session.resource("s3")
 
-    rv = []
+    manifests = []
+    guids = []
     bucket = s3.Bucket(bucket_name)
 
     try:
         bucket_objects = bucket.objects.filter(Prefix=folder + "/")
         for object_summary in bucket_objects:
-            manifest_summary = {
+            file_marker = {
                 "filename": ntpath.basename(object_summary.key),
                 "last_modified": object_summary.last_modified.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
             }
-            rv.append(manifest_summary)
+            print(object_summary.key)
+            if not object_summary.key.startswith('cohorts/'):
+                manifests.append(file_marker)
+            else:
+                guids.append(file_marker)
     except Exception as e:
         logger.error(e)
         return str(e), False
 
+    rv = { "manifests": manifests, "cohorts": guids }
     return rv, True
 
 
