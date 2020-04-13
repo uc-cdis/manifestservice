@@ -344,7 +344,6 @@ def _list_files_in_bucket(bucket_name, folder):
                     "%Y-%m-%d %H:%M:%S"
                 ),
             }
-            print(object_summary.key)
             if not 'cohorts/' in object_summary.key:
                 manifests.append(file_marker)
             else:
