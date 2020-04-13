@@ -345,7 +345,7 @@ def _list_files_in_bucket(bucket_name, folder):
                 ),
             }
             print(object_summary.key)
-            if not object_summary.key.startswith('cohorts/'):
+            if not 'cohorts/' in object_summary.key:
                 manifests.append(file_marker)
             else:
                 guids.append(file_marker)
