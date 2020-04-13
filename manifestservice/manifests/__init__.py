@@ -208,7 +208,8 @@ def _add_manifest_to_bucket(current_token, manifest_json):
 
 def _add_GUID_to_bucket(current_token, GUID):
     """
-    
+    Creates a new file in the user's folder at user-<id>/cohorts/
+    with a filename corresponding to the GUID provided by the user.
     """
     session = boto3.Session(
         region_name="us-east-1",
@@ -322,7 +323,18 @@ def _generate_unique_filename_with_timestamp_and_increment(
 
 def _list_files_in_bucket(bucket_name, folder):
     """
-    Lists the files in an s3 bucket. Returns a list of filenames.
+    Lists the files in an s3 bucket. Returns a dictionary.
+    The return value is of the form
+    {
+        "manifests:" [ 
+            # For files in the root of the user folder
+            { "filename": <filename>, "last_modified": <timestamp> }, ...
+        ],
+        "cohorts": [ 
+            # For files in the cohorts/ folder
+            { "filename": <filename>, "last_modified": <timestamp> }, ...
+        ]
+    }
     """
     session = boto3.Session(
         region_name="us-east-1",
