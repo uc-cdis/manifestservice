@@ -8,7 +8,8 @@ from datetime import date, datetime
 from authutils.token.validate import current_token, validate_request, set_current_token
 from authutils import user as authutils_user
 from cdislogging import get_logger
-logger = get_logger('manifestservice_logger')
+
+logger = get_logger("manifestservice_logger")
 
 blueprint = flask.Blueprint("manifests", __name__)
 
@@ -75,8 +76,8 @@ def get_manifest_file(file_name):
     folder_name = _get_folder_name_from_token(current_token)
 
     return _get_file_contents(
-            flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
-        )
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
+    )
 
 
 @blueprint.route("/", methods=["PUT", "POST"])
@@ -123,6 +124,7 @@ def put_manifest():
 
     return flask.jsonify(ret), 200
 
+
 @blueprint.route("/cohorts", methods=["PUT", "POST"])
 def put_pfb_guid():
     """
@@ -148,18 +150,14 @@ def put_pfb_guid():
     post_body = flask.request.json
     GUID = post_body["cohort_guid"]
     is_valid = is_valid_GUID(GUID)
-    
+
     if not is_valid:
         return (
-            flask.jsonify(
-                {
-                    "error": "The provided GUID: {} is invalid.".format(GUID)
-                }
-            ),
+            flask.jsonify({"error": "The provided GUID: {} is invalid.".format(GUID)}),
             400,
         )
     result, ok = _add_GUID_to_bucket(current_token, GUID)
-    
+
     if not ok:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
@@ -228,13 +226,13 @@ def _add_GUID_to_bucket(current_token, GUID):
         return result, False
     if GUID in existing_files:
         return GUID, True
-    
+
     filepath_in_bucket = folder_name + "/cohorts/" + GUID
     try:
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        response = obj.put(Body=str.encode(''))
+        response = obj.put(Body=str.encode(""))
     except Exception as e:
         return str(e), False
 
@@ -250,9 +248,9 @@ def _get_folder_name_from_token(user_info):
 
     According to the revproxy's helpers.js, it looks like the user_id is stored in a variable called "sub". Hm. 
     """
-    result =  "user-" + str(user_info["sub"])
+    result = "user-" + str(user_info["sub"])
     if "PREFIX" in app.config:
-        result =  app.config["PREFIX"] + "/user-" + str(user_info["sub"])
+        result = app.config["PREFIX"] + "/user-" + str(user_info["sub"])
     return result
 
 
@@ -356,7 +354,7 @@ def _list_files_in_bucket(bucket_name, folder):
                     "%Y-%m-%d %H:%M:%S"
                 ),
             }
-            if not 'cohorts/' in object_summary.key:
+            if not "cohorts/" in object_summary.key:
                 manifests.append(file_marker)
             else:
                 guids.append(file_marker)
@@ -364,7 +362,7 @@ def _list_files_in_bucket(bucket_name, folder):
         logger.error(e)
         return str(e), False
 
-    rv = { "manifests": manifests, "cohorts": guids }
+    rv = {"manifests": manifests, "cohorts": guids}
     return rv, True
 
 
@@ -410,6 +408,6 @@ def _authenticate_user():
 
 
 def is_valid_GUID(GUID):
-    regex = re.compile('[a-zA-Z0-9./-]*s', re.I)
+    regex = re.compile("[a-zA-Z0-9./-]*s", re.I)
     match = regex.match(str(GUID))
     return bool(match)
