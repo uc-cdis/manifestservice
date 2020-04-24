@@ -7,7 +7,8 @@ from datetime import date, datetime
 from authutils.token.validate import current_token, validate_request, set_current_token
 from authutils import user as authutils_user
 from cdislogging import get_logger
-logger = get_logger('manifestservice_logger')
+
+logger = get_logger("manifestservice_logger", log_level="info")
 
 blueprint = flask.Blueprint("manifests", __name__)
 
@@ -74,8 +75,8 @@ def get_manifest_file(file_name):
     folder_name = _get_folder_name_from_token(current_token)
 
     return _get_file_contents(
-            flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
-        )
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
+    )
 
 
 @blueprint.route("/", methods=["PUT", "POST"])
@@ -155,6 +156,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         )
         response = obj.put(Body=manifest_as_bytes)
     except Exception as e:
+        logger.error("Failed to add manifest to bucket: {}".format(e))
         return str(e), False
 
     return filename, True
@@ -169,9 +171,9 @@ def _get_folder_name_from_token(user_info):
 
     According to the revproxy's helpers.js, it looks like the user_id is stored in a variable called "sub". Hm. 
     """
-    result =  "user-" + str(user_info["sub"])
+    result = "user-" + str(user_info["sub"])
     if "PREFIX" in app.config:
-        result =  app.config["PREFIX"] + "/user-" + str(user_info["sub"])
+        result = app.config["PREFIX"] + "/user-" + str(user_info["sub"])
     return result
 
 
@@ -265,7 +267,11 @@ def _list_files_in_bucket(bucket_name, folder):
             }
             rv.append(manifest_summary)
     except Exception as e:
-        logger.error(e)
+        logger.error(
+            'Failed to list files in bucket "{}" folder "{}": {}'.format(
+                bucket_name, folder, e
+            )
+        )
         return str(e), False
 
     return rv, True
