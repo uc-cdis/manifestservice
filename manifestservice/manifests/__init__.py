@@ -187,8 +187,10 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     if not ok:
         return result, False
 
+    print('190 result:', result)
+
     filename = _generate_unique_manifest_filename(
-        folder_name, flask.current_app.config.get("MANIFEST_BUCKET_NAME"), result
+        folder_name, flask.current_app.config.get("MANIFEST_BUCKET_NAME"), result[manifests]
     )
     manifest_as_bytes = str.encode(str(flask.request.json))
     filepath_in_bucket = folder_name + "/" + filename
@@ -347,6 +349,7 @@ def _list_files_in_bucket(bucket_name, folder):
 
     try:
         bucket_objects = bucket.objects.filter(Prefix=folder + "/")
+        print('352 bucket_objects: ', bucket_objects)
         for object_summary in bucket_objects:
             file_marker = {
                 "filename": ntpath.basename(object_summary.key),
