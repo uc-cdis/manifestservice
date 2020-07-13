@@ -190,7 +190,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     print('190 result:', result)
 
     filename = _generate_unique_manifest_filename(
-        folder_name, flask.current_app.config.get("MANIFEST_BUCKET_NAME"), result[manifests]
+        folder_name, flask.current_app.config.get("MANIFEST_BUCKET_NAME"), result["manifests"]
     )
     manifest_as_bytes = str.encode(str(flask.request.json))
     filepath_in_bucket = folder_name + "/" + filename
