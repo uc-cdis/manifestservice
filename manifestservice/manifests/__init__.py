@@ -411,6 +411,6 @@ def _authenticate_user():
 
 
 def is_valid_GUID(GUID):
-    regex = re.compile("[a-zA-Z0-9./-]*s", re.I)
+    regex = re.compile("^.*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", re.I)
     match = regex.match(str(GUID))
     return bool(match)
