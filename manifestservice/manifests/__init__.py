@@ -41,7 +41,7 @@ def get_manifests():
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
-    json_to_return = {"manifests": result}
+    json_to_return = {"manifests": result["manifests"]}
 
     return flask.jsonify(json_to_return), 200
 
@@ -124,6 +124,36 @@ def put_manifest():
 
     return flask.jsonify(ret), 200
 
+@blueprint.route("/cohorts", methods=["GET"])
+def get_cohorts():
+    """
+    Returns a list of filenames -- which are GUIDs -- corresponding to the user's exported 
+    PFBs. We find the appropriate folder ("prefix") in the bucket by asking Fence for 
+    info about the user's access token.
+    ---
+    responses:
+        200:
+            description: Success
+        403:
+            description: Unauthorized
+    """
+
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+
+    folder_name = _get_folder_name_from_token(current_token)
+
+    result, ok = _list_files_in_bucket(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
+    )
+    if not ok:
+        json_to_return = {"error": "Currently unable to connect to s3."}
+        return flask.jsonify(json_to_return), 500
+
+    json_to_return = {"cohorts": result["cohorts"]}
+
+    return flask.jsonify(json_to_return), 200
 
 @blueprint.route("/cohorts", methods=["PUT", "POST"])
 def put_pfb_guid():
