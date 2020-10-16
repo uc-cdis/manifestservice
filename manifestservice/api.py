@@ -1,3 +1,5 @@
+import werkzeug
+werkzeug.cached_property = werkzeug.utils.cached_property
 import flask
 import logging
 import time
