@@ -175,20 +175,6 @@ def _get_folder_name_from_token(user_info):
     return result
 
 
-def _does_the_user_have_read_access_on_at_least_one_project(project_access_dict):
-    """
-    Returns True if the user has both read and read-storage access on at least one project, 
-    False otherwise.
-    """
-    privileges = list(project_access_dict.values())
-
-    for auth_set in privileges:
-        if "read" in auth_set and "read-storage" in auth_set:
-            return True
-
-    return False
-
-
 def is_valid_manifest(manifest_json, required_keys):
     """
     Returns True if the manifest.json is a list of the form [{'k' : v}, ...], 
@@ -296,17 +282,6 @@ def _authenticate_user():
     except Exception as e:
         logger.error(e)
         json_to_return = {"error": "Please log in."}
-        return flask.jsonify(json_to_return), 403
-
-    try:
-        auth_successful = _does_the_user_have_read_access_on_at_least_one_project(
-            authutils_user.current_user.projects
-        )
-    except Exception as e:
-        logger.error(e)
-        json_to_return = {
-            "error": "You must have read access on at least one project in order to use this feature."
-        }
         return flask.jsonify(json_to_return), 403
 
     return None, None
