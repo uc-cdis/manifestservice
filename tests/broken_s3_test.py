@@ -3,6 +3,7 @@ import requests
 import json as json_utils
 import random
 from manifestservice import manifests
+import boto3
 
 from manifestservice.api import create_app
 
@@ -46,11 +47,9 @@ def app(mocker):
     mocks["_authenticate_user"] = mocker.patch(
         "manifestservice.manifests._authenticate_user", return_value=(None, 200)
     )
-
-
     
     def broken_s3_connection(region_name, aws_access_key_id, aws_secret_access_key):
-        raise Exception("AWS Creds missing")
+        return boto3.Session('a', 'b', 'c')
 
     mocks["boto3"] = mocker.patch(
         "manifestservice.manifests.boto3.Session",
