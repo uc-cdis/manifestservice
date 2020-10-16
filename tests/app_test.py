@@ -293,7 +293,7 @@ def test_GET_cohorts(client):
 	"""
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.get("/cohorts", data=json_utils.dumps(post_body), headers=headers)
+    r = client.get("/cohorts", headers=headers)
 
     assert r.status_code == 200
     assert mocks["_authenticate_user"].call_count == 1
