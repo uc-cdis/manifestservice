@@ -49,7 +49,7 @@ def app(mocker):
 
 
     
-    def broken_s3_connection():
+    def broken_s3_connection(region_name, aws_access_key_id, aws_secret_access_key):
         raise Exception("AWS Creds missing")
 
     mocks["boto3"] = mocker.patch(
@@ -72,7 +72,7 @@ def test_GET_cohorts(client):
     assert r.status_code == 500
     assert mocks["_authenticate_user"].call_count == 1
 
-    json = r.json
+    response = r.json
     assert len(response.keys()) == 1
     # From the s3 mock
     assert response.keys()[0] == "error"
