@@ -278,7 +278,6 @@ def test_POST_successful_GUID_add(client):
     assert r.status_code == 200
     assert mocks["_authenticate_user"].call_count == 1
     assert mocks["_get_file_contents"].call_count == 0
-    assert mocks["get_manifests"].call_count == 0
     assert mocks["_add_manifest_to_bucket"].call_count == 0
     assert mocks["_add_GUID_to_bucket"].call_count == 0
 
