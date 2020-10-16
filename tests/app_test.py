@@ -182,7 +182,7 @@ def test_POST_handles_invalid_json(client):
     """
 	Test that we get a 400 if flask.request.json is not filled in.
 	"""
-    r = client.post("/", data={"a": 1})
+    r = client.post("/", data={ "a": 1 })
     assert r.status_code == 400
 
 
