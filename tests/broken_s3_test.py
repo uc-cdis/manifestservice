@@ -72,6 +72,4 @@ def test_GET_cohorts(client):
 
     response = r.json
     assert len(response.keys()) == 1
-    # From the s3 mock
-    assert response.keys()[0] == "error"
     assert response["error"] == "Currently unable to connect to s3."
