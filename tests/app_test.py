@@ -285,4 +285,4 @@ def test_POST_successful_GUID_add(client):
     new_guid = json["filename"]
 
     assert new_guid is not None
-    assert type(new_filename) is str
+    assert type(new_guid) is str
