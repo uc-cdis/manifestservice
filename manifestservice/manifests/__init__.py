@@ -259,7 +259,7 @@ def _add_GUID_to_bucket(current_token, GUID):
     )
 
     if not ok:
-        return result, False
+        return None, False
     if GUID in existing_files:
         return GUID, True
 
