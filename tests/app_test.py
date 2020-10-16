@@ -304,7 +304,7 @@ def test_GET_cohorts(client):
 
     json = r.json
     cohorts_returned = json["cohorts"]
-    assert len(cohorts_returned.keys()) == 1
+    assert len(cohorts_returned) == 1
     # From the s3 mock
     assert cohorts_returned["filename"] == {"18e32c12-a053-4ac5-90a5-f01f70b5c2be"}
 
