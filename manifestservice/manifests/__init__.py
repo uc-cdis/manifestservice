@@ -160,14 +160,18 @@ def put_pfb_guid():
     """
     Add PFB GUID to s3 bucket.
     Will create a new file named with the value of the GUID for the PFB in the user's s3 folder
+    Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe" }
     ---
     responses:
         200:
             description: Success
+            Return value: ({ "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)
         403:
             description: Unauthorized
+            Return value: ({ "error" : "<error-message>" }, 403)
         400:
             description: Bad GUID format
+            Return value: ({ "error" : "<error-message>" }, 400)
     """
 
     err, code = _authenticate_user()
@@ -178,7 +182,7 @@ def put_pfb_guid():
         return flask.jsonify({"error": "Please provide valid JSON."}), 400
 
     post_body = flask.request.json
-    GUID = post_body["cohort_guid"]
+    GUID = post_body.get("guid")
     is_valid = is_valid_GUID(GUID)
 
     if not is_valid:
