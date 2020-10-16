@@ -270,7 +270,7 @@ def test_POST_successful_GUID_add(client):
 	"""
 
     test_guid = "5183a350-9d56-4084-8a03-6471cafeb7fe"
-    post_body = { "cohort_guid" : test_guid }
+    post_body = { "guid" : test_guid }
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     r = client.post("/cohorts", data=json_utils.dumps(post_body), headers=headers)
@@ -283,6 +283,30 @@ def test_POST_successful_GUID_add(client):
 
     json = r.json
     new_guid = json["filename"]
+
+    assert new_guid is not None
+    assert type(new_guid) is str
+
+def test_GET_cohorts(client):
+    """
+	Test GET /cohorts
+	"""
+
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    r = client.get("/cohorts", data=json_utils.dumps(post_body), headers=headers)
+
+    assert r.status_code == 200
+    assert mocks["_authenticate_user"].call_count == 1
+    assert mocks["_get_file_contents"].call_count == 0
+    assert mocks["_add_manifest_to_bucket"].call_count == 0
+    assert mocks["_add_GUID_to_bucket"].call_count == 0
+    assert mocks["_list_files_in_bucket"].call_count == 1
+
+    json = r.json
+    cohorts_returned = json["cohorts"]
+    assert len(cohorts_returned.keys()) == 1
+    # From the s3 mock
+    assert cohorts_returned["filename"] == {"18e32c12-a053-4ac5-90a5-f01f70b5c2be"}
 
     assert new_guid is not None
     assert type(new_guid) is str
