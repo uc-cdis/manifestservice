@@ -5,9 +5,6 @@ FROM quay.io/cdis/python-nginx:pybase3-1.3.0
 
 ENV appname=manifestservice
 
-# number of uwsgi worker processes
-ENV UWSGI_CHEAPER 2
-
 ENV WORKON_HOME=/.venv
 
 RUN apk update \
