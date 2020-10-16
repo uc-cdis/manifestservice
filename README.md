@@ -37,9 +37,21 @@ Read the contents of a manifest file in the user's folder:
     GET /file/<filename.json>
     Returns: { "body" : "the-body-of-the-manifest-file-as-a-string" }
 
+Lists a user's cohorts: 
+
+    GET /cohorts
+    Returns: { "cohorts" : [ { "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe", "last_modified" : "2019-02-27 17:44:21" }, ... ] }
+  
+Create a cohort GUID in the user's folder:
+
+    POST /cohorts
+    Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe" }
+    Returns: { "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe" }
+
 On failure, the above endpoints all return JSON in the form 
     
     { "error" : "error-message" }
+  
 
 ### Running the service locally
 If you want to run this service locally, fill out the config.json file with the correct values and then run:
