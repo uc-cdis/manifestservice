@@ -1,5 +1,3 @@
-import werkzeug
-werkzeug.cached_property = werkzeug.utils.cached_property
 import flask
 import boto3
 from flask import current_app as app
