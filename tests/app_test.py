@@ -265,9 +265,10 @@ def test_POST_successful_GUID_add(client):
 	"""
 
     test_guid = "5183a350-9d56-4084-8a03-6471cafeb7fe"
+    post_body = { "cohort_guid" : test_guid }
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.post("/cohorts", data=json_utils.dumps(test_manifest), headers=headers)
+    r = client.post("/cohorts", data=json_utils.dumps(post_body), headers=headers)
 
     assert r.status_code == 200
     assert mocks["_authenticate_user"].call_count == 1
