@@ -1,7 +1,7 @@
 import pytest
 import requests
 import json as json_utils
-
+import random
 from manifestservice import manifests
 
 from manifestservice.api import create_app
@@ -49,7 +49,14 @@ def app(mocker):
 
     mocks["_list_files_in_bucket"] = mocker.patch(
         "manifestservice.manifests._list_files_in_bucket",
-        return_value=([{"filename": "manifest-a-b-c.json"}], True),
+        return_value=({
+            "manifests": [
+                {"filename": "manifest-a-b-c.json"},
+            ],
+            "cohorts": [
+                {"filename": "18e32c12-a053-4ac5-90a5-f01f70b5c2be"}
+            ]
+            }, True),
     )
 
     mocks["_add_manifest_to_bucket"] = mocker.patch(
@@ -207,8 +214,6 @@ def test_POST_successful_manifest_upload(client):
 	nor that the filebody is correct, as that would require a real s3 connection.
 	Instead, s3 is mocked and we assert that the correct functions are called. 
 	"""
-    import random
-
     random_nums = [
         random.randint(1, 101),
         random.randint(1, 101),
@@ -251,3 +256,28 @@ def test_POST_successful_manifest_upload(client):
     assert mocks["_add_manifest_to_bucket"].call_count == 1
     assert mocks["_list_files_in_bucket"].call_count == 1
     assert mocks["_get_file_contents"].call_count == 1
+
+def test_POST_successful_GUID_add(client):
+    """
+	Test the Export PFB to Workspace pathway: a cohort is added to the bucket.
+    Note that because s3 is being mocked, only an integration test can properly 
+    verify file creation.
+	"""
+
+    test_guid = "5183a350-9d56-4084-8a03-6471cafeb7fe"
+
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    r = client.post("/cohorts", data=json_utils.dumps(test_manifest), headers=headers)
+
+    assert r.status_code == 200
+    assert mocks["_authenticate_user"].call_count == 1
+    assert mocks["put_pfb_guid"].call_count == 1
+    assert mocks["_get_file_contents"].call_count == 0
+    assert mocks["get_manifests"].call_count == 0
+    assert mocks["_add_manifest_to_bucket"].call_count == 0
+
+    json = r.json
+    new_guid = json["filename"]
+
+    assert new_guid is not None
+    assert type(new_filename) is str
