@@ -64,7 +64,7 @@ def app(mocker):
         return_value=("manifest-xxx.json", True),
     )
 
-    mocks["_`get_`file_contents"] = mocker.patch(
+    mocks["_get_file_contents"] = mocker.patch(
         "manifestservice.manifests._get_file_contents", return_value=""
     )
 
