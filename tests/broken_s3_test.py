@@ -48,12 +48,11 @@ def app(mocker):
         "manifestservice.manifests._authenticate_user", return_value=(None, 200)
     )
     
-    def broken_s3_connection(region_name, aws_access_key_id, aws_secret_access_key):
-        return boto3.Session('a', 'b', 'c')
+    broken_s3_connection = boto3.Session('a', 'b', 'c')
 
     mocks["boto3"] = mocker.patch(
         "manifestservice.manifests.boto3.Session",
-        broken_s3_connection
+        return_value=broken_s3_connection
     )
 
     app = create_app()
