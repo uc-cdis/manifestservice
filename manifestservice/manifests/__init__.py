@@ -389,6 +389,7 @@ def _list_files_in_bucket(bucket_name, folder):
                 "last_modified": object_summary.last_modified.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
+                "last_modified_timestamp": datetime.timestamp(object_summary.last_modified),
             }
             if not "cohorts/" in object_summary.key:
                 manifests.append(file_marker)
