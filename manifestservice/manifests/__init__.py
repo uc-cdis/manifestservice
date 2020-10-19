@@ -389,6 +389,7 @@ def _list_files_in_bucket(bucket_name, folder):
                 "last_modified": object_summary.last_modified.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
+                "last_modified_timestamp": datetime.timestamp(object_summary.last_modified),
             }
             if not "cohorts/" in object_summary.key:
                 manifests.append(file_marker)
@@ -397,8 +398,11 @@ def _list_files_in_bucket(bucket_name, folder):
     except Exception as e:
         logger.error(e)
         return str(e), False
+    
+    manifests_sorted = sorted(manifests, key = lambda i: i['last_modified_timestamp'])
+    guids_sorted = sorted(guids, key = lambda i: i['last_modified_timestamp'])
 
-    rv = {"manifests": manifests, "cohorts": guids}
+    rv = {"manifests": manifests_sorted, "cohorts": guids_sorted}
     return rv, True
 
 
