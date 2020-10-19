@@ -9,14 +9,9 @@ from authutils.token.validate import current_token, validate_request, set_curren
 from authutils import user as authutils_user
 from cdislogging import get_logger
 
-<<<<<<< HEAD
-logger = get_logger("manifestservice_logger")
-=======
 logger = get_logger("manifestservice_logger", log_level="info")
->>>>>>> ec13b9c0c7554850ac75f4061a0a84dd58501642
 
 blueprint = flask.Blueprint("manifests", __name__)
-
 
 @blueprint.route("/", methods=["GET"])
 def get_manifests():
