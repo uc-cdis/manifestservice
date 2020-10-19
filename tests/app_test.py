@@ -79,10 +79,10 @@ def app(mocker):
 
 def test_generate_unique_manifest_filename_basic_date_generation():
     """
-	Tests that the _generate_unique_filename_with_timestamp_and_increment() function
-	generates a unique filename containing the given timestamp, based on the files in the
-	user's bucket. 
-	"""
+    Tests that the _generate_unique_filename_with_timestamp_and_increment() function
+    generates a unique filename containing the given timestamp, based on the files in the
+    user's bucket.
+    """
     timestamp = "a-b-c"
     users_existing_manifest_files = []
     filename = manifests._generate_unique_filename_with_timestamp_and_increment(
@@ -128,9 +128,9 @@ def test_generate_unique_manifest_filename_basic_date_generation():
 
 def test_is_valid_manifest():
     """
-	Tests that the function is_valid_manifest() correctly determines
-	if the input manifest string is valid.
-	"""
+    Tests that the function is_valid_manifest() correctly determines
+    if the input manifest string is valid.
+    """
     required_keys = ["object_id"]
     test_manifest = [{"foo": 44}]
     is_valid = manifests.is_valid_manifest(test_manifest, required_keys)
@@ -155,16 +155,16 @@ def test_is_valid_manifest():
 
 def test_POST_handles_invalid_json(client):
     """
-	Test that we get a 400 if flask.request.json is not filled in.
-	"""
+    Test that we get a 400 if flask.request.json is not filled in.
+    """
     r = client.post("/", data={"a": 1})
     assert r.status_code == 400
 
 
 def test_POST_handles_invalid_manifest_keys(client):
     """
-	Test that we get a 400 if the manifest is missing the required key -- object_id.
-	"""
+    Test that we get a 400 if the manifest is missing the required key -- object_id.
+    """
     test_manifest = [{"foo": 44, "bar": 88}]
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     r = client.post("/", json=test_manifest, headers=headers)
@@ -177,11 +177,12 @@ def test_POST_handles_invalid_manifest_keys(client):
 
 def test_POST_successful_manifest_upload(client):
     """
-	Test the full user pathway: a manifest is created, listed, and then downloaded.
-	Unfortunately, we cannot verify here that the manifest is present in the listed files, 
-	nor that the filebody is correct, as that would require a real s3 connection.
-	Instead, s3 is mocked and we assert that the correct functions are called. 
-	"""
+    Test the full user pathway: a manifest is created, listed, and then downloaded.
+    Unfortunately, we cannot verify here that the manifest is present in the listed files,
+    nor that the filebody is correct, as that would require a real s3 connection.
+    Instead, s3 is mocked and we assert that the correct functions are called.
+    """
+    
     random_nums = [
         random.randint(1, 101),
         random.randint(1, 101),

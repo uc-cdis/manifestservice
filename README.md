@@ -2,8 +2,8 @@
 ### Overview
 This service handles reading from and writing to a user's s3 folder containing their manifests. A manifest is a JSON file that lists records a researcher may be interested in analyzing. This service stores a manifest to a user folder in an s3 bucket and delivers it for later use, such as when the researcher wants to mount the manifest in their workspace. If the "prefix" config variable is set, user folders will be stored in a directory of that name within the s3 bucket.
 
-Manifest files should contain JSON of the form 
-    
+Manifest files should contain JSON of the form
+
     [
       {
         "object_id": "757508f5-2697-4700-a69f-89d173a4c514",
@@ -21,7 +21,7 @@ Manifest files should contain JSON of the form
 For all endpoints, the request must contain an Authorization header with an access_token. The user needs read access and read-storage access
 on at least one project in order to use this service.
 
-Lists a user's manifests: 
+Lists a user's manifests:
 
     GET /
     Returns: { "manifests" : [ { "filename" : "manifest-2019-02-27T11-44-20.548126.json", "last_modified" : "2019-02-27 17:44:21" }, ... ] }
@@ -48,8 +48,8 @@ Create a cohort GUID in the user's folder:
     Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe" }
     Returns: { "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe" }
 
-On failure, the above endpoints all return JSON in the form 
-    
+On failure, the above endpoints all return JSON in the form
+
     { "error" : "error-message" }
   
 

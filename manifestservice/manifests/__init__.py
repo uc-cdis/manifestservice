@@ -17,7 +17,7 @@ blueprint = flask.Blueprint("manifests", __name__)
 def get_manifests():
     """
     Returns a list of filenames corresponding to the user's manifests.
-    We find the appropriate folder ("prefix") in the bucket by asking Fence for 
+    We find the appropriate folder ("prefix") in the bucket by asking Fence for
     info about the user's access token.
     ---
     responses:
@@ -52,7 +52,7 @@ def get_manifest_file(file_name):
     The argument is the filename of the manifest you want to downloaded,
     of the form "manifest-timestamp".json. The user folder prefix is encapsulated from
     the caller -- just provide the basepath.
-    ---    
+    ---
     responses:
         200:
             description: Success
@@ -202,7 +202,7 @@ def put_pfb_guid():
 
 def _add_manifest_to_bucket(current_token, manifest_json):
     """
-    Puts the manifest_json string into a file and uploads it to s3. 
+    Puts the manifest_json string into a file and uploads it to s3.
     Generates and returns the name of the new file.
     """
     session = boto3.Session(
@@ -279,10 +279,10 @@ def _get_folder_name_from_token(user_info):
     """
     Returns the name of the user's manifest folder (their "prefix").
     It takes a "user_info" dict, which is the response that Fence returns at /user/user
-    The convention we'll use here is that a user's folder name will be "user-x" where x is 
+    The convention we'll use here is that a user's folder name will be "user-x" where x is
     their ID (integer).
 
-    According to the revproxy's helpers.js, it looks like the user_id is stored in a variable called "sub". Hm. 
+    According to the revproxy's helpers.js, it looks like the user_id is stored in a variable called "sub". Hm.
     """
     result = "user-" + str(user_info["sub"])
     if "PREFIX" in app.config:
@@ -292,7 +292,7 @@ def _get_folder_name_from_token(user_info):
 
 def is_valid_manifest(manifest_json, required_keys):
     """
-    Returns True if the manifest.json is a list of the form [{'k' : v}, ...], 
+    Returns True if the manifest.json is a list of the form [{'k' : v}, ...],
     where each member dictionary contains an object_id key.
     Otherwise, returns False
     """
@@ -325,7 +325,7 @@ def _generate_unique_filename_with_timestamp_and_increment(
     """
     A helper function for _generate_unique_manifest_filename(), which facilitates unit testing.
     Adds an increment to the filename if there happens to be another timestamped file with the same name
-    (unlikely, but good to check). 
+    (unlikely, but good to check).
     """
     filename_without_extension = "manifest-" + timestamp.replace(":", "-")
     extension = ".json"
@@ -398,7 +398,7 @@ def _list_files_in_bucket(bucket_name, folder):
 
 def _get_file_contents(bucket_name, folder, filename):
     """
-    Returns the body of a requested file as a string. 
+    Returns the body of a requested file as a string.
     """
     client = boto3.client(
         "s3",
