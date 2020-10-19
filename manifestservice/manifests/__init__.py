@@ -7,7 +7,8 @@ from datetime import date, datetime
 from authutils.token.validate import current_token, validate_request, set_current_token
 from authutils import user as authutils_user
 from cdislogging import get_logger
-logger = get_logger('manifestservice_logger')
+
+logger = get_logger("manifestservice_logger", log_level="info")
 
 blueprint = flask.Blueprint("manifests", __name__)
 
@@ -74,8 +75,8 @@ def get_manifest_file(file_name):
     folder_name = _get_folder_name_from_token(current_token)
 
     return _get_file_contents(
-            flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
-        )
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
+    )
 
 
 @blueprint.route("/", methods=["PUT", "POST"])
@@ -155,6 +156,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         )
         response = obj.put(Body=manifest_as_bytes)
     except Exception as e:
+        logger.error("Failed to add manifest to bucket: {}".format(e))
         return str(e), False
 
     return filename, True
@@ -173,20 +175,6 @@ def _get_folder_name_from_token(user_info):
     if "PREFIX" in app.config:
         result =  app.config["PREFIX"] + "/user-" + str(user_info["sub"])
     return result
-
-
-def _does_the_user_have_read_access_on_at_least_one_project(project_access_dict):
-    """
-    Returns True if the user has both read and read-storage access on at least one project, 
-    False otherwise.
-    """
-    privileges = list(project_access_dict.values())
-
-    for auth_set in privileges:
-        if "read" in auth_set and "read-storage" in auth_set:
-            return True
-
-    return False
 
 
 def is_valid_manifest(manifest_json, required_keys):
@@ -265,7 +253,11 @@ def _list_files_in_bucket(bucket_name, folder):
             }
             rv.append(manifest_summary)
     except Exception as e:
-        logger.error(e)
+        logger.error(
+            'Failed to list files in bucket "{}" folder "{}": {}'.format(
+                bucket_name, folder, e
+            )
+        )
         return str(e), False
 
     return rv, True
@@ -296,17 +288,6 @@ def _authenticate_user():
     except Exception as e:
         logger.error(e)
         json_to_return = {"error": "Please log in."}
-        return flask.jsonify(json_to_return), 403
-
-    try:
-        auth_successful = _does_the_user_have_read_access_on_at_least_one_project(
-            authutils_user.current_user.projects
-        )
-    except Exception as e:
-        logger.error(e)
-        json_to_return = {
-            "error": "You must have read access on at least one project in order to use this feature."
-        }
         return flask.jsonify(json_to_return), 403
 
     return None, None
