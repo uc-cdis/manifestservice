@@ -126,43 +126,6 @@ def test_generate_unique_manifest_filename_basic_date_generation():
     assert filename == "manifest-a-b-c-3.json"
 
 
-def test__does_the_user_have_read_access_on_at_least_one_project():
-    """
-	Tests that the function _does_the_user_have_read_access_on_at_least_one_project()
-	provides the correct value for different arborist user_info inputs.
-	"""
-    project_access_dict = {}
-    rv = manifests._does_the_user_have_read_access_on_at_least_one_project(
-        project_access_dict
-    )
-    assert rv is False
-
-    project_access_dict = {"test": ["read-storage", "write-storage", "read"], "DEV": []}
-    rv = manifests._does_the_user_have_read_access_on_at_least_one_project(
-        project_access_dict
-    )
-    assert rv is True
-
-    project_access_dict = {
-        "test": ["write-storage", "read"],
-        "abc123": ["something", "something-else"],
-    }
-    rv = manifests._does_the_user_have_read_access_on_at_least_one_project(
-        project_access_dict
-    )
-    assert rv is False
-
-    # You need both read and read-storage to use this service.
-    project_access_dict = {
-        "jenkins": ["read"],
-        "abc123": ["something", "something-else"],
-    }
-    rv = manifests._does_the_user_have_read_access_on_at_least_one_project(
-        project_access_dict
-    )
-    assert rv is False
-
-
 def test_is_valid_manifest():
     """
 	Tests that the function is_valid_manifest() correctly determines
