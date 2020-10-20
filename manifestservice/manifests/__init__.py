@@ -1,6 +1,7 @@
 import flask
 import boto3
 from flask import current_app as app
+import re
 import requests
 import ntpath
 from datetime import date, datetime
@@ -11,7 +12,6 @@ from cdislogging import get_logger
 logger = get_logger("manifestservice_logger", log_level="info")
 
 blueprint = flask.Blueprint("manifests", __name__)
-
 
 @blueprint.route("/", methods=["GET"])
 def get_manifests():
@@ -40,7 +40,7 @@ def get_manifests():
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
-    json_to_return = {"manifests": result}
+    json_to_return = {"manifests": result["manifests"]}
 
     return flask.jsonify(json_to_return), 200
 
@@ -123,6 +123,82 @@ def put_manifest():
 
     return flask.jsonify(ret), 200
 
+@blueprint.route("/cohorts", methods=["GET"])
+def get_cohorts():
+    """
+    Returns a list of filenames -- which are GUIDs -- corresponding to the user's exported 
+    PFBs. We find the appropriate folder ("prefix") in the bucket by asking Fence for 
+    info about the user's access token.
+    ---
+    responses:
+        200:
+            description: Success
+        403:
+            description: Unauthorized
+    """
+
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+
+    folder_name = _get_folder_name_from_token(current_token)
+
+    result, ok = _list_files_in_bucket(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
+    )
+    if not ok:
+        json_to_return = {"error": "Currently unable to connect to s3."}
+        return flask.jsonify(json_to_return), 500
+
+    json_to_return = {"cohorts": result["cohorts"]}
+
+    return flask.jsonify(json_to_return), 200
+
+@blueprint.route("/cohorts", methods=["PUT", "POST"])
+def put_pfb_guid():
+    """
+    Add PFB GUID to s3 bucket.
+    Will create a new file named with the value of the GUID for the PFB in the user's s3 folder
+    Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe" }
+    ---
+    responses:
+        200:
+            description: Success
+            Return value: ({ "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)
+        403:
+            description: Unauthorized
+            Return value: ({ "error" : "<error-message>" }, 403)
+        400:
+            description: Bad GUID format
+            Return value: ({ "error" : "<error-message>" }, 400)
+    """
+
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+
+    if not flask.request.json:
+        return flask.jsonify({"error": "Please provide valid JSON."}), 400
+
+    post_body = flask.request.json
+    GUID = post_body.get("guid")
+    is_valid = is_valid_GUID(GUID)
+
+    if not is_valid:
+        return (
+            flask.jsonify({"error": "The provided GUID: {} is invalid.".format(GUID)}),
+            400,
+        )
+    result, ok = _add_GUID_to_bucket(current_token, GUID)
+
+    if not ok:
+        json_to_return = {"error": "Currently unable to connect to s3."}
+        return flask.jsonify(json_to_return), 500
+
+    ret = {"filename": result}
+
+    return flask.jsonify(ret), 200
+
 
 def _add_manifest_to_bucket(current_token, manifest_json):
     """
@@ -145,7 +221,9 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         return result, False
 
     filename = _generate_unique_manifest_filename(
-        folder_name, flask.current_app.config.get("MANIFEST_BUCKET_NAME"), result
+        folder_name,
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"),
+        result["manifests"],
     )
     manifest_as_bytes = str.encode(str(flask.request.json))
     filepath_in_bucket = folder_name + "/" + filename
@@ -160,6 +238,41 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         return str(e), False
 
     return filename, True
+
+
+def _add_GUID_to_bucket(current_token, GUID):
+    """
+    Creates a new file in the user's folder at user-<id>/cohorts/
+    with a filename corresponding to the GUID provided by the user.
+    """
+    session = boto3.Session(
+        region_name="us-east-1",
+        aws_access_key_id=app.config["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=app.config["AWS_SECRET_ACCESS_KEY"],
+    )
+    s3 = session.resource("s3")
+
+    folder_name = _get_folder_name_from_token(current_token)
+
+    existing_files, ok = _list_files_in_bucket(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
+    )
+
+    if not ok:
+        return None, False
+    if GUID in existing_files:
+        return GUID, True
+
+    filepath_in_bucket = folder_name + "/cohorts/" + GUID
+    try:
+        obj = s3.Object(
+            flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
+        )
+        response = obj.put(Body=str.encode(""))
+    except Exception as e:
+        return str(e), False
+
+    return GUID, True
 
 
 def _get_folder_name_from_token(user_info):
@@ -230,7 +343,18 @@ def _generate_unique_filename_with_timestamp_and_increment(
 
 def _list_files_in_bucket(bucket_name, folder):
     """
-    Lists the files in an s3 bucket. Returns a list of filenames.
+    Lists the files in an s3 bucket. Returns a dictionary.
+    The return value is of the form
+    {
+        "manifests:" [ 
+            # For files in the root of the user folder
+            { "filename": <filename>, "last_modified": <timestamp> }, ...
+        ],
+        "cohorts": [ 
+            # For files in the cohorts/ folder
+            { "filename": <filename>, "last_modified": <timestamp> }, ...
+        ]
+    }
     """
     session = boto3.Session(
         region_name="us-east-1",
@@ -239,19 +363,24 @@ def _list_files_in_bucket(bucket_name, folder):
     )
     s3 = session.resource("s3")
 
-    rv = []
+    manifests = []
+    guids = []
     bucket = s3.Bucket(bucket_name)
 
     try:
         bucket_objects = bucket.objects.filter(Prefix=folder + "/")
         for object_summary in bucket_objects:
-            manifest_summary = {
+            file_marker = {
                 "filename": ntpath.basename(object_summary.key),
                 "last_modified": object_summary.last_modified.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
+                "last_modified_timestamp": datetime.timestamp(object_summary.last_modified),
             }
-            rv.append(manifest_summary)
+            if not "cohorts/" in object_summary.key:
+                manifests.append(file_marker)
+            else:
+                guids.append(file_marker)
     except Exception as e:
         logger.error(
             'Failed to list files in bucket "{}" folder "{}": {}'.format(
@@ -259,7 +388,11 @@ def _list_files_in_bucket(bucket_name, folder):
             )
         )
         return str(e), False
+    
+    manifests_sorted = sorted(manifests, key = lambda i: i['last_modified_timestamp'])
+    guids_sorted = sorted(guids, key = lambda i: i['last_modified_timestamp'])
 
+    rv = {"manifests": manifests_sorted, "cohorts": guids_sorted}
     return rv, True
 
 
@@ -291,3 +424,12 @@ def _authenticate_user():
         return flask.jsonify(json_to_return), 403
 
     return None, None
+
+
+def is_valid_GUID(GUID):
+    regex = re.compile(
+        "^.*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
+        re.I,
+    )
+    match = regex.match(str(GUID))
+    return bool(match)
