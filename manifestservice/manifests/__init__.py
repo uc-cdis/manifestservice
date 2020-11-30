@@ -374,7 +374,6 @@ def _list_files_in_bucket(bucket_name, folder):
         bucket_objects = bucket.objects.filter(Prefix=folder + "/")
         for object_summary in bucket_objects:
             file_marker = {
-                "filename": ntpath.basename(object_summary.key),
                 "last_modified": object_summary.last_modified.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
@@ -383,8 +382,10 @@ def _list_files_in_bucket(bucket_name, folder):
                 ),
             }
             if not "cohorts/" in object_summary.key:
+                file_marker["filename"] = ntpath.basename(object_summary.key)
                 manifests.append(file_marker)
             else:
+                file_marker["filename"] = object_summary.key.split("cohorts/")[1]
                 guids.append(file_marker)
     except Exception as e:
         logger.error(

@@ -7,7 +7,7 @@ from manifestservice.api import create_app
 
 
 @pytest.fixture
-def app(mocker):
+def app():
     app = create_app()
     return app
 
@@ -141,7 +141,7 @@ def mocked_bucket():
         [
             MockedS3Object(key="username/my-manifest.json"),
             MockedS3Object(key="username/cohorts/guid-without-prefix"),
-            MockedS3Object(key="username/cohorts/gd.mytest/guid-with-prefix"),
+            MockedS3Object(key="username/cohorts/dg.mytest/guid-with-prefix"),
         ]
     )
 

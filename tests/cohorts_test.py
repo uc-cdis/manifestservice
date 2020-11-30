@@ -82,4 +82,4 @@ def test_list_files_in_bucket(client, mocked_bucket):
         if "without-prefix" in cohort["filename"]:
             assert cohort["filename"] == "guid-without-prefix"
         else:
-            assert cohort["filename"] == "gd.mytest/guid-with-prefix"
+            assert cohort["filename"] == "dg.mytest/guid-with-prefix"
