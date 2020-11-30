@@ -47,12 +47,11 @@ def app(mocker):
     mocks["_authenticate_user"] = mocker.patch(
         "manifestservice.manifests._authenticate_user", return_value=(None, 200)
     )
-    
-    broken_s3_connection = boto3.Session('a', 'b', 'c')
+
+    broken_s3_connection = boto3.Session("a", "b", "c")
 
     mocks["boto3"] = mocker.patch(
-        "manifestservice.manifests.boto3.Session",
-        return_value=broken_s3_connection
+        "manifestservice.manifests.boto3.Session", return_value=broken_s3_connection
     )
 
     app = create_app()
@@ -61,8 +60,8 @@ def app(mocker):
 
 def test_GET_cohorts(client):
     """
-	Test GET /cohorts if s3 creds are broken
-	"""
+    Test GET /cohorts if s3 creds are broken
+    """
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     r = client.get("/cohorts", headers=headers)

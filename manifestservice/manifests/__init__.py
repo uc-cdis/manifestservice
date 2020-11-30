@@ -13,6 +13,7 @@ logger = get_logger("manifestservice_logger", log_level="info")
 
 blueprint = flask.Blueprint("manifests", __name__)
 
+
 @blueprint.route("/", methods=["GET"])
 def get_manifests():
     """
@@ -123,11 +124,12 @@ def put_manifest():
 
     return flask.jsonify(ret), 200
 
+
 @blueprint.route("/cohorts", methods=["GET"])
 def get_cohorts():
     """
-    Returns a list of filenames -- which are GUIDs -- corresponding to the user's exported 
-    PFBs. We find the appropriate folder ("prefix") in the bucket by asking Fence for 
+    Returns a list of filenames -- which are GUIDs -- corresponding to the user's exported
+    PFBs. We find the appropriate folder ("prefix") in the bucket by asking Fence for
     info about the user's access token.
     ---
     responses:
@@ -153,6 +155,7 @@ def get_cohorts():
     json_to_return = {"cohorts": result["cohorts"]}
 
     return flask.jsonify(json_to_return), 200
+
 
 @blueprint.route("/cohorts", methods=["PUT", "POST"])
 def put_pfb_guid():
@@ -346,11 +349,11 @@ def _list_files_in_bucket(bucket_name, folder):
     Lists the files in an s3 bucket. Returns a dictionary.
     The return value is of the form
     {
-        "manifests:" [ 
+        "manifests:" [
             # For files in the root of the user folder
             { "filename": <filename>, "last_modified": <timestamp> }, ...
         ],
-        "cohorts": [ 
+        "cohorts": [
             # For files in the cohorts/ folder
             { "filename": <filename>, "last_modified": <timestamp> }, ...
         ]
@@ -375,7 +378,9 @@ def _list_files_in_bucket(bucket_name, folder):
                 "last_modified": object_summary.last_modified.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
-                "last_modified_timestamp": datetime.timestamp(object_summary.last_modified),
+                "last_modified_timestamp": datetime.timestamp(
+                    object_summary.last_modified
+                ),
             }
             if not "cohorts/" in object_summary.key:
                 manifests.append(file_marker)
@@ -388,9 +393,9 @@ def _list_files_in_bucket(bucket_name, folder):
             )
         )
         return str(e), False
-    
-    manifests_sorted = sorted(manifests, key = lambda i: i['last_modified_timestamp'])
-    guids_sorted = sorted(guids, key = lambda i: i['last_modified_timestamp'])
+
+    manifests_sorted = sorted(manifests, key=lambda i: i["last_modified_timestamp"])
+    guids_sorted = sorted(guids, key=lambda i: i["last_modified_timestamp"])
 
     rv = {"manifests": manifests_sorted, "cohorts": guids_sorted}
     return rv, True
