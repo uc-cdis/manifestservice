@@ -1,5 +1,7 @@
 import boto3
+from datetime import datetime
 import pytest
+from unittest.mock import MagicMock, patch
 
 from manifestservice.api import create_app
 
@@ -125,3 +127,27 @@ def broken_s3_mocks(mocker):
     )
 
     return all_mocks
+
+
+@pytest.fixture
+def mocked_bucket():
+    class MockedS3Object:
+        def __init__(self, key):
+            self.key = key
+            self.last_modified = datetime.now()
+
+    mock = MagicMock()
+    mock.return_value = iter(
+        [
+            MockedS3Object(key="username/my-manifest.json"),
+            MockedS3Object(key="username/cohorts/guid-without-prefix"),
+            MockedS3Object(key="username/cohorts/gd.mytest/guid-with-prefix"),
+        ]
+    )
+
+    patcher = patch("boto3.resources.collection.ResourceCollection.__iter__", mock)
+    patcher.start()
+
+    yield mock
+
+    patcher.stop()

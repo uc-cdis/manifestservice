@@ -1,5 +1,7 @@
 import json as json_utils
 
+from manifestservice.manifests import _list_files_in_bucket
+
 
 def test_POST_successful_GUID_add(client, mocks):
     """
@@ -60,3 +62,24 @@ def test_GET_cohorts_broken_s3(client, broken_s3_mocks):
     response = r.json
     assert len(response.keys()) == 1
     assert response["error"] == "Currently unable to connect to s3."
+
+
+def test_list_files_in_bucket(client, mocked_bucket):
+    """
+    Test that prefixes are not removed from GUIDs when listing cohorts
+    in buckets
+    """
+    result, ok = _list_files_in_bucket("fake_bucket_name", "fake_folder")
+    assert ok, result
+
+    manifests = result["manifests"]
+    assert len(manifests) == 1
+    assert manifests[0]["filename"] == "my-manifest.json"
+
+    cohorts = result["cohorts"]
+    assert len(cohorts) == 2
+    for cohort in cohorts:
+        if "without-prefix" in cohort["filename"]:
+            assert cohort["filename"] == "guid-without-prefix"
+        else:
+            assert cohort["filename"] == "gd.mytest/guid-with-prefix"

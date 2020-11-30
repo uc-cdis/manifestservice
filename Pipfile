@@ -8,6 +8,7 @@ codacy-coverage = "*"
 pytest="~=4.3"
 pytest-mock="~=1.10"
 pytest-flask="~=0.15.0"
+unittest2="~=1.1.0"
 
 [packages]
 flask="~=1.1.2"
