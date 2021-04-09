@@ -636,7 +636,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "2024f52c6ada30030a86a0ad9d0d18680ecbe0f889d82b018fe618f5fa42729a" // pragma: allowlist secret
+content-hash = "2024f52c6ada30030a86a0ad9d0d18680ecbe0f889d82b018fe618f5fa42729a"
 
 [metadata.files]
 argparse = [
