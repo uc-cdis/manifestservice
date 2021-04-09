@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "manifestservice"
+version = "0.1.0"
+description = "Handles reading from and writing to a user's s3 folder containing their manifests"
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+Flask = "^1.1.2"
+authutils = "^5.0.5"
+boto3 = "^1.17.48"
+cryptography = "^3.4.7"
+requests = "^2.25.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.3"
+pytest-mock = "^3.5.1"
+pytest-flask = "^1.2.0"
+unittest2 = "^1.1.0"
+codacy-coverage = "^1.3.11"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
