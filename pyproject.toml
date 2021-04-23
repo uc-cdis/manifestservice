@@ -2,10 +2,15 @@
 name = "manifestservice"
 version = "0.1.0"
 description = "Handles reading from and writing to a user's s3 folder containing their manifests"
-authors = ["Your Name <you@example.com>"]
+authors = ["CTDS UChicago <cdis@uchicago.edu>"]
+license = "Apache-2.0"
+repository = "https://github.com/uc-cdis/manifestservice"
+include = [
+  "NOTICE",
+]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "3.6.*"
 Flask = "^1.1.2"
 authutils = "^5.0.5"
 boto3 = "^1.17.48"
