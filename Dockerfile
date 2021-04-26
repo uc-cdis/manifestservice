@@ -8,7 +8,7 @@ ENV appname=manifestservice
 RUN pip install --upgrade pip
 
 RUN apk add --update \
-    postgresql-libs postgresql-dev libffi-dev openssl-dev \
+    postgresql-libs postgresql-dev libffi-dev libressl-dev \
     linux-headers musl-dev gcc \
     curl bash git vim
 
