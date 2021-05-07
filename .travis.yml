@@ -1,7 +1,10 @@
-sudo: false
+dist: xenial
 language: python
 
-python: "3.6"
+python:
+  - "3.6"
+
+sudo: false
 
 cache:
   - pip
@@ -9,9 +12,9 @@ cache:
 
 # install dependencies
 install:
-  - pip install pipenv
-  - pipenv install --skip-lock --dev
-  - pipenv graph
+  - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+  - source $HOME/.poetry/env
+  - poetry install -vv
 
 # run tests
 script:
@@ -20,4 +23,4 @@ script:
   - python -m pytest -v
 
 after_script:
-  - pipenv run python-codacy-coverage -r coverage.xml
+  - poetry run python-codacy-coverage -r coverage.xml
