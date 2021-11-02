@@ -1,16 +1,20 @@
 # To run: docker run -v /path/to/wsgi.py:/var/www/manifestservice/wsgi.py --name=manifestservice -p 81:80 manifestservice
 # To check running container: docker exec -it manifestservice /bin/bash
 
-FROM quay.io/cdis/python-nginx:pybase3-1.5.0
+FROM quay.io/cdis/python:pybase3-2.0.0
 
 ENV appname=manifestservice
 
 RUN pip install --upgrade pip
 
-RUN apk add --update \
-    postgresql-libs postgresql-dev libffi-dev libressl-dev \
-    linux-headers musl-dev gcc \
-    curl bash git vim
+# install poetry
+RUN pip install --upgrade poetry
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends\
+    libmcrypt4 libmhash2 mcrypt \
+    curl bash git \
+    && apt-get clean
 
 RUN mkdir -p /var/www/$appname \
     && mkdir -p /var/www/.cache/Python-Eggs/ \
@@ -22,20 +26,21 @@ RUN mkdir -p /var/www/$appname \
 
 EXPOSE 80
 
-# install poetry
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+WORKDIR /$appname
+
+# copy ONLY poetry artifact and install
+# this will make sure than the dependencies is cached
+COPY poetry.lock pyproject.toml /$appname/
+RUN poetry config virtualenvs.create false \
+    && poetry install -vv --no-root --no-dev --no-interaction \
+    && poetry show -v
 
 COPY . /$appname
 COPY ./deployment/uwsgi/uwsgi.ini /etc/uwsgi/uwsgi.ini
 COPY ./deployment/uwsgi/wsgi.py /$appname/wsgi.py
-WORKDIR /$appname
-
-# cache so that poetry install will run if these files change
-COPY poetry.lock pyproject.toml /$appname/
 
 # install Indexd and dependencies via poetry
-RUN source $HOME/.poetry/env \
-    && poetry config virtualenvs.create false \
+RUN poetry config virtualenvs.create false \
     && poetry install -vv --no-dev --no-interaction \
     && poetry show -v
 
