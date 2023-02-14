@@ -12,9 +12,8 @@ cache:
 
 # install dependencies
 install:
-  - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-  - source $HOME/.poetry/env
-  - poetry install -vv
+  - pip install poetry
+  - poetry install -vv --no-interaction
 
 # run tests
 script:
