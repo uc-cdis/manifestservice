@@ -63,3 +63,8 @@ If you want to run this service locally, fill out the config.json file with the 
 And then GET and POST to http://localhost:5000/
 
 You'll need AWS credentials in your environment to run this locally.
+
+### Quickstart with Helm
+
+You can now deploy individual services via Helm!
+Please refer to the Helm quickstart guide HERE (https://github.com/uc-cdis/manifestservice/blob/master/docs/quickstart_helm.md)
