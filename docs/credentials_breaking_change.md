@@ -10,7 +10,7 @@ Historically, the ManifestService required AWS credentials to be able to access 
 
 ## New Method
 
-With the latest update, ManifestService will no longer look for AWS credentials in the configuration file. Instead, the service will rely on credentials mounted to the pod. This change is implemented to ensure an improved security environment for the service.
+Starting in version 1.0.0/2023.07, ManifestService longer looks for AWS credentials in the configuration file. Instead, the service relies on credentials mounted to the pod. This change is implemented to ensure an improved security environment for the service.
 
 ### AWS EKS IRSA
 
