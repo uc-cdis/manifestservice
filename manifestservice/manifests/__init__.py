@@ -210,8 +210,6 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     """
     session = boto3.Session(
         region_name="us-east-1",
-        aws_access_key_id=app.config["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=app.config["AWS_SECRET_ACCESS_KEY"],
     )
     s3 = session.resource("s3")
 
@@ -250,8 +248,6 @@ def _add_GUID_to_bucket(current_token, GUID):
     """
     session = boto3.Session(
         region_name="us-east-1",
-        aws_access_key_id=app.config["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=app.config["AWS_SECRET_ACCESS_KEY"],
     )
     s3 = session.resource("s3")
 
@@ -361,8 +357,6 @@ def _list_files_in_bucket(bucket_name, folder):
     """
     session = boto3.Session(
         region_name="us-east-1",
-        aws_access_key_id=app.config["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=app.config["AWS_SECRET_ACCESS_KEY"],
     )
     s3 = session.resource("s3")
 
@@ -408,8 +402,6 @@ def _get_file_contents(bucket_name, folder, filename):
     """
     client = boto3.client(
         "s3",
-        aws_access_key_id=app.config["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=app.config["AWS_SECRET_ACCESS_KEY"],
     )
     obj = client.get_object(Bucket=bucket_name, Key=folder + "/" + filename)
     as_bytes = obj["Body"].read()

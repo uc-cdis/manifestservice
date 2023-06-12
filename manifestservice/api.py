@@ -37,15 +37,7 @@ def create_app():
     app.config["OIDC_ISSUER"] = "https://%s/user" % config_dict["hostname"]
     app.config["MANIFEST_BUCKET_NAME"] = config_dict["manifest_bucket_name"]
 
-    app.config["AWS_ACCESS_KEY_ID"] = config_dict["aws_access_key_id"].strip()
-    app.config["AWS_SECRET_ACCESS_KEY"] = config_dict["aws_secret_access_key"].strip()
-
-    os.environ["AWS_ACCESS_KEY_ID"] = config_dict["aws_access_key_id"].strip()
-    os.environ["AWS_SECRET_ACCESS_KEY"] = config_dict["aws_secret_access_key"].strip()
-
     required_config_variables = [
-        "AWS_SECRET_ACCESS_KEY",
-        "AWS_ACCESS_KEY_ID",
         "OIDC_ISSUER",
         "MANIFEST_BUCKET_NAME",
     ]
