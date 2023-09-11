@@ -164,16 +164,17 @@ def put_pfb_guid():
     Will create a new file named with the value of the GUID for the PFB in the user's s3 folder
     Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe" }
     ---
-    responses:
+
+    Returns:
         200:
             description: Success
-            Return value: ({ "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)
+            example: '({ "filename": "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)'
         403:
             description: Unauthorized
-            Return value: ({ "error" : "<error-message>" }, 403)
+            example: '({ "error": "<error-message>" }, 403)'
         400:
             description: Bad GUID format
-            Return value: ({ "error" : "<error-message>" }, 400)
+            example: '({ "error": "<error-message>" }, 400)'
     """
 
     err, code = _authenticate_user()
