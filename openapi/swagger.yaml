@@ -2,15 +2,43 @@ definitions: {}
 info:
   contact:
     email: cdis@uchicago.edu
-  description: A service template for CDIS Gen 3 data commons. Code is available on
-    [GitHub](https://github.com/uc-cdis/template-repo).
+  description: A microservice that facilitates manifest creation and retrieval. Code
+    is available on [GitHub](https://github.com/uc-cdis/manifestservice).
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://cdis.uchicago.edu/terms/
-  title: Service template OpenAPI Specification
+  title: Manifest Service OpenAPI Specification
   version: '1.0'
 paths:
+  /:
+    get:
+      description: We find the appropriate folder ("prefix") in the bucket by asking
+        Fence for<br/>info about the user's access token.<br/>
+      responses:
+        '200':
+          description: Success
+        '403':
+          description: Unauthorized
+      summary: Returns a list of filenames corresponding to the user's manifests.
+    post:
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad manifest format
+        '403':
+          description: Unauthorized
+      summary: Add manifest to s3 bucket. See the README for the format of this file.
+    put:
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad manifest format
+        '403':
+          description: Unauthorized
+      summary: Add manifest to s3 bucket. See the README for the format of this file.
   /_status:
     get:
       responses:
@@ -21,73 +49,38 @@ paths:
       summary: Health check endpoint
       tags:
       - system
-  /admin:
+  /cohorts:
     get:
+      description: PFBs. We find the appropriate folder ("prefix") in the bucket by
+        asking Fence for<br/>info about the user's access token.<br/>
       responses:
         '200':
           description: Success
-        '401':
-          description: Unauthorized
-      summary: Admin endpoint
-      tags:
-      - admin
-  /admin/is_admin:
-    get:
-      responses:
-        '200':
-          description: User is admin
         '403':
-          description: User is not admin
-      summary: Admin endpoint
-      tags:
-      - admin
-  /something:
-    get:
-      responses:
-        '200':
-          description: Success
-      summary: Get something
-    put:
-      responses:
-        '200':
-          description: Success
-      summary: Put something
-  /something/bar:
-    get:
-      responses:
-        '200':
-          description: Success
-      summary: bar!
-  /something/foo/{param}:
-    get:
-      parameters:
-      - in: path
-        name: param
-        required: true
-        type: string
-      responses:
-        '200':
-          description: Success
-      summary: foo!
-  /something/put-get:
-    get:
-      description: <br/>GET and PUT have the same documentation:<br/>
-      responses:
-        '200':
-          description: Success
-      summary: Several methods for the same function
-    put:
-      description: <br/>GET and PUT have the same documentation:<br/>
-      responses:
-        '200':
-          description: Success
-      summary: Several methods for the same function
-  /user_endpoint:
-    get:
-      responses:
-        '200':
-          description: Success
-        '401':
           description: Unauthorized
-      summary: User endpoint
+      summary: Returns a list of filenames -- which are GUIDs -- corresponding to
+        the user's exported
+    post:
+      description: 'Will create a new file named with the value of the GUID for the
+        PFB in the user''s s3 folder<br/>Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe"
+        }<br/>'
+      summary: Add PFB GUID to s3 bucket.
+    put:
+      description: 'Will create a new file named with the value of the GUID for the
+        PFB in the user''s s3 folder<br/>Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe"
+        }<br/>'
+      summary: Add PFB GUID to s3 bucket.
+  /file/{file_name}:
+    get:
+      description: The argument is the filename of the manifest you want to downloaded,<br/>of
+        the form "manifest-timestamp".json. The user folder prefix is encapsulated
+        from<br/>the caller -- just provide the basepath.<br/>
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request format
+        '403':
+          description: Unauthorized
+      summary: Returns the requested manifest file from the user's folder.
 swagger: '2.0'
