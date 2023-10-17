@@ -62,32 +62,31 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "authlib"
-version = "0.11"
-description = "The ultimate Python library in building OAuth and OpenID Connect servers."
+version = "1.2.1"
+description = "The ultimate Python library in building OAuth and OpenID Connect servers and clients."
 optional = false
 python-versions = "*"
 files = [
-    {file = "Authlib-0.11-py2.py3-none-any.whl", hash = "sha256:3a226f231e962a16dd5f6fcf0c113235805ba206e294717a64fa8e04ae3ad9c4"},
-    {file = "Authlib-0.11.tar.gz", hash = "sha256:9741db6de2950a0a5cefbdb72ec7ab12f7e9fd530ff47219f1530e79183cbaaf"},
+    {file = "Authlib-1.2.1-py2.py3-none-any.whl", hash = "sha256:c88984ea00149a90e3537c964327da930779afa4564e354edfd98410bea01911"},
+    {file = "Authlib-1.2.1.tar.gz", hash = "sha256:421f7c6b468d907ca2d9afede256f068f87e34d23dd221c07d13d4c234726afb"},
 ]
 
 [package.dependencies]
-cryptography = "*"
-requests = "*"
+cryptography = ">=3.2"
 
 [[package]]
 name = "authutils"
-version = "6.2.2"
+version = "6.2.3"
 description = "Gen3 auth utility functions"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "authutils-6.2.2-py3-none-any.whl", hash = "sha256:df9b551b4ab561452f0f4b50edaddccc443905b4d77ee69ea7eea78938e7caed"},
-    {file = "authutils-6.2.2.tar.gz", hash = "sha256:ded3e5c0e35160eab83bfb217976920396441e19ed977acacbb769e988323850"},
+    {file = "authutils-6.2.3-py3-none-any.whl", hash = "sha256:8c4e7e24183cbc1055ab91eaf9d2966f0da5b739be0fabfe380749674ba3057e"},
+    {file = "authutils-6.2.3.tar.gz", hash = "sha256:c44e1f309b2b5b6db1276f69e1e18ec5c6be1ae33bfe52608a30049b8669ff7b"},
 ]
 
 [package.dependencies]
-authlib = "0.11.0"
+authlib = ">=1.1.0"
 cached-property = ">=1.4,<2.0"
 cdiserrors = "<2.0.0"
 httpx = ">=0.23.0,<1.0.0"
@@ -96,7 +95,7 @@ xmltodict = ">=0.9,<1.0"
 
 [package.extras]
 fastapi = ["fastapi (>=0.65.2,<0.66.0)"]
-flask = ["Flask (>=0.10.1)"]
+flask = ["Flask (<=2.3.3)"]
 
 [[package]]
 name = "blinker"
@@ -1270,4 +1269,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <4.0"
-content-hash = "f585a05357c639ed234e9ddf43cecd10a2f6c4a278864e738e5827801ebf3173"
+content-hash = "85199c87491cef62a7a803fc8c9e9cfe5a0729b7c341c00c643b74fcfda3953c"
