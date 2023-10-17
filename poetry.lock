@@ -62,42 +62,40 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "authlib"
-version = "0.15.6"
+version = "0.11"
 description = "The ultimate Python library in building OAuth and OpenID Connect servers."
 optional = false
 python-versions = "*"
 files = [
-    {file = "Authlib-0.15.6-py2.py3-none-any.whl", hash = "sha256:6de4508ba8125e438a35bcd910d55df7087dccd3dd8517095c2bd9853c372ec1"},
-    {file = "Authlib-0.15.6.tar.gz", hash = "sha256:2988fdf7d0a5c416f5a37ca4b1e7cee360094940229bc97909aed25880326c72"},
+    {file = "Authlib-0.11-py2.py3-none-any.whl", hash = "sha256:3a226f231e962a16dd5f6fcf0c113235805ba206e294717a64fa8e04ae3ad9c4"},
+    {file = "Authlib-0.11.tar.gz", hash = "sha256:9741db6de2950a0a5cefbdb72ec7ab12f7e9fd530ff47219f1530e79183cbaaf"},
 ]
 
 [package.dependencies]
 cryptography = "*"
-
-[package.extras]
-client = ["requests"]
+requests = "*"
 
 [[package]]
 name = "authutils"
-version = "5.0.5"
+version = "6.2.2"
 description = "Gen3 auth utility functions"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = ">=3.9,<4.0"
 files = [
-    {file = "authutils-5.0.5-py3-none-any.whl", hash = "sha256:91e81838b8ba419d5fd92550747f8f60a1f5e91fee4146109e35728bea140034"},
-    {file = "authutils-5.0.5.tar.gz", hash = "sha256:ffe8f0425f065353106f5fbe8eb2d38284d34406724e175c3aa2f1806723f361"},
+    {file = "authutils-6.2.2-py3-none-any.whl", hash = "sha256:df9b551b4ab561452f0f4b50edaddccc443905b4d77ee69ea7eea78938e7caed"},
+    {file = "authutils-6.2.2.tar.gz", hash = "sha256:ded3e5c0e35160eab83bfb217976920396441e19ed977acacbb769e988323850"},
 ]
 
 [package.dependencies]
-authlib = ">=0.11,<1.0"
+authlib = "0.11.0"
 cached-property = ">=1.4,<2.0"
 cdiserrors = "<2.0.0"
-httpx = ">=0.12.1,<1.0.0"
-pyjwt = {version = ">=1.5,<2.0", extras = ["crypto"]}
+httpx = ">=0.23.0,<1.0.0"
+pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 xmltodict = ">=0.9,<1.0"
 
 [package.extras]
-fastapi = ["fastapi (>=0.54.1,<0.55.0)"]
+fastapi = ["fastapi (>=0.65.2,<0.66.0)"]
 flask = ["Flask (>=0.10.1)"]
 
 [[package]]
@@ -818,22 +816,23 @@ files = [
 
 [[package]]
 name = "pyjwt"
-version = "1.7.1"
+version = "2.8.0"
 description = "JSON Web Token implementation in Python"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "PyJWT-1.7.1-py2.py3-none-any.whl", hash = "sha256:5c6eca3c2940464d106b99ba83b00c6add741c9becaec087fb7ccdefea71350e"},
-    {file = "PyJWT-1.7.1.tar.gz", hash = "sha256:8d59a976fb773f3e6a39c85636357c4f0e242707394cadadd9814f5cbaa20e96"},
+    {file = "PyJWT-2.8.0-py3-none-any.whl", hash = "sha256:59127c392cc44c2da5bb3192169a91f429924e17aff6534d70fdc02ab3e04320"},
+    {file = "PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de"},
 ]
 
 [package.dependencies]
-cryptography = {version = ">=1.4", optional = true, markers = "extra == \"crypto\""}
+cryptography = {version = ">=3.4.0", optional = true, markers = "extra == \"crypto\""}
 
 [package.extras]
-crypto = ["cryptography (>=1.4)"]
-flake8 = ["flake8", "flake8-import-order", "pep8-naming"]
-test = ["pytest (>=4.0.1,<5.0.0)", "pytest-cov (>=2.6.0,<3.0.0)", "pytest-runner (>=4.2,<5.0.0)"]
+crypto = ["cryptography (>=3.4.0)"]
+dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
+docs = ["sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
+tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 
 [[package]]
 name = "pytest"
@@ -1271,4 +1270,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <4.0"
-content-hash = "ab712c85bb14a64c76178fbf30849fc7937b126a1094f9962eebbece31476697"
+content-hash = "f585a05357c639ed234e9ddf43cecd10a2f6c4a278864e738e5827801ebf3173"
