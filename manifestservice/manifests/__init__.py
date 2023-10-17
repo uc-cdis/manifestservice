@@ -93,7 +93,6 @@ def put_manifest():
         400:
             description: Bad manifest format
     """
-
     err, code = _authenticate_user()
     if err is not None:
         return err, code
