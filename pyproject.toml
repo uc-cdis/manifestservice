@@ -12,7 +12,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.9, <4.0"
 Flask = "^2.3.2"
-authutils = "<6.2.3" # authlib update in 6.2.3
+authutils = "<7"
 boto3 = "^1.17.48"
 cryptography = ">=41.0.3"
 requests = "^2.25.1"
@@ -28,5 +28,5 @@ pyyaml = "^6.0.1"
 flasgger = "^0.9.7.1"
 
 [build-system]
-requires = ["poetry-core>=1.5.1"]
+requires = ["poetry>=1.1.15"]
 build-backend = "poetry.core.masonry.api"
