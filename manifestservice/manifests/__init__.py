@@ -416,8 +416,9 @@ def _authenticate_user():
     If the user's access token is invalid, they get a 403.
     If the user lacks read access on at least one project, they get a 403.
     """
+    audience = flask.current_app.config["OIDC_ISSUER"]
     try:
-        set_current_token(validate_request(scope={"user"}))
+        set_current_token(validate_request(scope={"user"}, audience=audience))
     except Exception as e:
         logger.error(e)
         json_to_return = {"error": "Please log in."}

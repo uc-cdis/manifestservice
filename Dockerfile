@@ -13,7 +13,7 @@ RUN pip install --upgrade poetry
 RUN apt-get update \
     && apt-get install -y --no-install-recommends\
     libmcrypt4 libmhash2 mcrypt \
-    curl bash git \
+    curl bash git vim \
     && apt-get clean
 
 RUN mkdir -p /var/www/$appname \
