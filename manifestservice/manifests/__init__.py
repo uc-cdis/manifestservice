@@ -1,4 +1,5 @@
 import flask
+import html
 import boto3
 from flask import current_app as app
 import re
@@ -67,6 +68,7 @@ def get_manifest_file(file_name):
     if err is not None:
         return err, code
 
+    file_name = html.escape(file_name)
     if not file_name.endswith("json"):
         json_to_return = {
             "error": "Incorrect usage. You can only use this pathway to request files of type JSON."
