@@ -415,7 +415,7 @@ def _authenticate_user():
     If the user lacks read access on at least one project, they get a 403.
     """
     try:
-        set_current_token(validate_request(aud={"user"}))
+        set_current_token(validate_request(scope={"user"}))
     except Exception as e:
         logger.error(e)
         json_to_return = {"error": "Please log in."}
