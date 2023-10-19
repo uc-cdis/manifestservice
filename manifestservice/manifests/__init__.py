@@ -1,4 +1,5 @@
 import flask
+import html
 import boto3
 from flask import current_app as app
 import re
@@ -67,6 +68,7 @@ def get_manifest_file(file_name):
     if err is not None:
         return err, code
 
+    file_name = html.escape(file_name)
     if not file_name.endswith("json"):
         json_to_return = {
             "error": "Incorrect usage. You can only use this pathway to request files of type JSON."
@@ -93,7 +95,6 @@ def put_manifest():
         400:
             description: Bad manifest format
     """
-
     err, code = _authenticate_user()
     if err is not None:
         return err, code
@@ -415,8 +416,9 @@ def _authenticate_user():
     If the user's access token is invalid, they get a 403.
     If the user lacks read access on at least one project, they get a 403.
     """
+    audience = flask.current_app.config["OIDC_ISSUER"]
     try:
-        set_current_token(validate_request(aud={"user"}))
+        set_current_token(validate_request(scope={"user"}, audience=audience))
     except Exception as e:
         logger.error(e)
         json_to_return = {"error": "Please log in."}
