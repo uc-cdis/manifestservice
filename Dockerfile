@@ -1,7 +1,7 @@
 # To run: docker run -v /path/to/wsgi.py:/var/www/manifestservice/wsgi.py --name=manifestservice -p 81:80 manifestservice
 # To check running container: docker exec -it manifestservice /bin/bash
 
-FROM quay.io/cdis/python:python3.6-buster-pybase3-3.0.2
+FROM quay.io/cdis/python:python3.9-buster-2.0.0
 
 ENV appname=manifestservice
 
