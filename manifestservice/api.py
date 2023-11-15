@@ -6,6 +6,19 @@ from .manifests import blueprint as manifests_bp
 import os
 import json
 
+TRUSTED_CONFIG_PATH_PREFIXES  = [
+    os.getcwd(),
+    "/var/gen3"
+]
+
+def validate_config_path(config_path):
+    for trusted_path in TRUSTED_CONFIG_PATH_PREFIXES:
+        if os.path.commonpath((os.path.realpath(config_path), trusted_path)) == trusted_path:
+            return
+    raise ValueError(
+        "Illegal config file path provided as {}".format(config_path)
+    )
+
 
 def create_app():
     app = flask.Flask(__name__)
@@ -15,9 +28,10 @@ def create_app():
     config_path = os.environ.get("MANIFEST_SERVICE_CONFIG_PATH", "config.json")
 
     try:
-        f = open(config_path)
-        config_str = f.read()
-        config_dict = json.loads(config_str)
+        validate_config_path(config_path)
+        with open(config_path) as f:
+            config_str = f.read()
+            config_dict = json.loads(config_str)
     except Exception as e:
         print(e)
         raise ValueError(
