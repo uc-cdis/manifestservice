@@ -233,7 +233,7 @@ def get_metadata():
     return flask.jsonify(json_to_return), 200
 
 
-@blueprint.route("/metadata/<file_name>", methods=["GET"])
+@blueprint.route("/metadata/exported-metadata/<file_name>", methods=["GET"])
 def get_metadata_file(file_name):
     """
     List all exported metadata objects associated with user
