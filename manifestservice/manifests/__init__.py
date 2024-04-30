@@ -258,7 +258,7 @@ def get_metadata_file(file_name):
         }
         return flask.jsonify(json_to_return), 400
 
-    folder_name = _get_folder_name_from_token(current_token) + "/exported-metadata/"
+    folder_name = _get_folder_name_from_token(current_token) + "exported-metadata/"
 
     return _get_file_contents(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
