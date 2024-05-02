@@ -323,7 +323,7 @@ def _add_metadata_to_bucket(current_token, metadata_body):
     if not ok:
         return None, False
     filename = _generate_unique_metadata_filename(
-        result["metadata"],
+        result["external_file_metadata"],
     )
 
     metadata_as_bytes = str.encode(str(metadata_body))
@@ -497,8 +497,8 @@ def _list_files_in_bucket(bucket_name, folder):
             # For files in the cohorts/ folder
             { "filename": <filename>, "last_modified": <timestamp> }, ...
         ],
-        "metadata": [
-            { "filename": <filename>, "last_modified": <timestamp> }, ...
+        "external_file_metadata": [
+            { "external_oidc_idp": "qdr-keycloak", "file_retriever": "QDR", "study_id": "doi:10.5064/F6N2GOC9" }, ...
         ],
     }
     """
@@ -526,8 +526,10 @@ def _list_files_in_bucket(bucket_name, folder):
             if "cohorts/" in object_summary.key:
                 file_marker["filename"] = object_summary.key.split("cohorts/")[1]
                 guids.append(file_marker)
-            elif "metadata/" in object_summary.key:
-                file_marker["filename"] = object_summary.key.split("metadata/")[1]
+            elif "external_file_metadata/" in object_summary.key:
+                file_marker["filename"] = object_summary.key.split(
+                    "external_file_metadata/"
+                )[1]
                 metadata.append(file_marker)
             else:
                 file_marker["filename"] = ntpath.basename(object_summary.key)
@@ -547,7 +549,7 @@ def _list_files_in_bucket(bucket_name, folder):
     rv = {
         "manifests": manifests_sorted,
         "cohorts": guids_sorted,
-        "metadata": metadata_sorted,
+        "external_file_metadata": metadata_sorted,
     }
     return rv, True
 
