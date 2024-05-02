@@ -323,7 +323,7 @@ def _add_metadata_to_bucket(current_token, metadata_body):
     if not ok:
         return None, False
     filename = _generate_unique_metadata_filename(
-        result["external_file_metadata"],
+        result["metadata"],
     )
 
     metadata_as_bytes = str.encode(str(metadata_body))
