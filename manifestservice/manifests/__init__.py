@@ -305,7 +305,7 @@ def put_metadata():
 
 def _add_metadata_to_bucket(current_token, metadata_body):
     """
-    Creates a new file in the user's folder at user-<id>/cohorts/
+    Creates a new file in the user's folder at user-<id>/metadata/exported-data/
     with a filename corresponding to the GUID provided by the user.
     """
     session = boto3.Session(
