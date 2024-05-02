@@ -228,7 +228,7 @@ def get_metadata():
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
-    json_to_return = {"metadata": result["metadata"]}
+    json_to_return = {"external_file_metadata": result["metadata"]}
 
     return flask.jsonify(json_to_return), 200
 
@@ -497,7 +497,7 @@ def _list_files_in_bucket(bucket_name, folder):
             # For files in the cohorts/ folder
             { "filename": <filename>, "last_modified": <timestamp> }, ...
         ],
-        "external_file_metadata": [
+        "metadata": [
             { "external_oidc_idp": "qdr-keycloak", "file_retriever": "QDR", "study_id": "doi:10.5064/F6N2GOC9" }, ...
         ],
     }
@@ -526,10 +526,8 @@ def _list_files_in_bucket(bucket_name, folder):
             if "cohorts/" in object_summary.key:
                 file_marker["filename"] = object_summary.key.split("cohorts/")[1]
                 guids.append(file_marker)
-            elif "external_file_metadata/" in object_summary.key:
-                file_marker["filename"] = object_summary.key.split(
-                    "external_file_metadata/"
-                )[1]
+            elif "metadata/" in object_summary.key:
+                file_marker["filename"] = object_summary.key.split("metadata/")[1]
                 metadata.append(file_marker)
             else:
                 file_marker["filename"] = ntpath.basename(object_summary.key)
@@ -549,7 +547,7 @@ def _list_files_in_bucket(bucket_name, folder):
     rv = {
         "manifests": manifests_sorted,
         "cohorts": guids_sorted,
-        "external_file_metadata": metadata_sorted,
+        "metadata": metadata_sorted,
     }
     return rv, True
 
