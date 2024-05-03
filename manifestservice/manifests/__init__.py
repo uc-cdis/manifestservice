@@ -288,10 +288,8 @@ def put_metadata():
     if not flask.request.json:
         return flask.jsonify({"error": "Please provide valid JSON."}), 400
 
-    # TODO: Figure out how to create the <Discovery metadata for study XYZ>
     metadata_body = flask.request.json
 
-    # TODO: Implement _add_metadata_to_bucket and figure out what to pass on for second parameter
     result, ok = _add_metadata_to_bucket(current_token, metadata_body)
 
     if not ok:
@@ -315,7 +313,6 @@ def _add_metadata_to_bucket(current_token, metadata_body):
 
     folder_name = _get_folder_name_from_token(current_token)
 
-    # TODO: implement everything after line 315: after folder_name = _get_folder_name_from_token(current_token) ...
     result, ok = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
@@ -483,7 +480,6 @@ def _generate_unique_filename_with_timestamp_and_increment(
     return filename
 
 
-# TODO: Add metadata object to returned values. Call this from new metadata endpoint, but remember to filter out the manifests and cohorts
 def _list_files_in_bucket(bucket_name, folder):
     """
     Lists the files in an s3 bucket. Returns a dictionary.
