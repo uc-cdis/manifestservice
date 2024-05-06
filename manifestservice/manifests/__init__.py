@@ -319,7 +319,7 @@ def _add_metadata_to_bucket(current_token, metadata_body):
 
     if not ok:
         return None, False
-    filename = _generate_unique_metadata_filename(
+    filename = _generate_unique_manifest_or_metadata_filename(
         result["metadata"],
     )
 
@@ -354,9 +354,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     if not ok:
         return result, False
 
-    filename = _generate_unique_manifest_filename(
-        folder_name,
-        flask.current_app.config.get("MANIFEST_BUCKET_NAME"),
+    filename = _generate_unique_manifest_or_metadata_filename(
         result["manifests"],
     )
     manifest_as_bytes = str.encode(str(flask.request.json))
@@ -436,22 +434,17 @@ def is_valid_manifest(manifest_json, required_keys):
     return True
 
 
-def _generate_unique_manifest_filename(users_existing_manifest_files):
+def _generate_unique_manifest_or_metadata_filename(
+    users_existing_manifest_or_metadata_files,
+):
     """
     Returns a filename of the form manifest-<timestamp>-<optional-increment>.json that is
     unique among the files in the user's manifest folder.
     """
     timestamp = datetime.now().isoformat()
-    existing_filenames = map(lambda x: x["filename"], users_existing_manifest_files)
-    filename = _generate_unique_filename_with_timestamp_and_increment(
-        timestamp, existing_filenames
+    existing_filenames = map(
+        lambda x: x["filename"], users_existing_manifest_or_metadata_files
     )
-    return filename
-
-
-def _generate_unique_metadata_filename(users_existing_metadata_files):
-    timestamp = datetime.now().isoformat()
-    existing_filenames = map(lambda x: x["filename"], users_existing_metadata_files)
     filename = _generate_unique_filename_with_timestamp_and_increment(
         timestamp, existing_filenames
     )
@@ -494,7 +487,8 @@ def _list_files_in_bucket(bucket_name, folder):
             { "filename": <filename>, "last_modified": <timestamp> }, ...
         ],
         "metadata": [
-            { "external_oidc_idp": "qdr-keycloak", "file_retriever": "QDR", "study_id": "doi:10.5064/F6N2GOC9" }, ...
+            # For files in the exported-metadata/ folder
+            { "filename": <filename>, "last_modified": <timestamp> }, ...
         ],
     }
     """
