@@ -319,7 +319,7 @@ def _add_metadata_to_bucket(current_token, metadata_body):
 
     if not ok:
         return None, False
-    filename = _generate_unique_manifest_or_metadata_filename(
+    filename = _generate_unique_filename(
         result["metadata"],
     )
 
@@ -354,7 +354,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     if not ok:
         return result, False
 
-    filename = _generate_unique_manifest_or_metadata_filename(
+    filename = _generate_unique_filename(
         result["manifests"],
     )
     manifest_as_bytes = str.encode(str(flask.request.json))
@@ -434,7 +434,7 @@ def is_valid_manifest(manifest_json, required_keys):
     return True
 
 
-def _generate_unique_manifest_or_metadata_filename(
+def _generate_unique_filename(
     users_existing_manifest_or_metadata_files,
 ):
     """
