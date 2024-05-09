@@ -14,7 +14,7 @@ def test_POST_successful_metadata_add(client, mocks):
             "file_id": "45138",
         }
     ]
-    post_body = {test_metadata_contents}
+    post_body = test_metadata_contents
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     r = client.post("/metadata", data=json_utils.dumps(post_body), headers=headers)
@@ -42,7 +42,7 @@ def test_POST_successful_metadata_add(client, mocks):
     metadata_files = json["external_file_metadata"]
     assert type(metadata_files) is list
 
-    r = client.get("/file/" + returned_filename, headers=headers)
+    r = client.get("/metadata/" + returned_filename, headers=headers)
     assert r.status_code == 200
     assert mocks["_authenticate_user"].call_count == 3
     assert mocks["_add_metadata_to_bucket"].call_count == 1
