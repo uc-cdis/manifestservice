@@ -59,6 +59,9 @@ def mocks(mocker):
                     {"filename": "manifest-a-b-c.json"},
                 ],
                 "cohorts": [{"filename": "18e32c12-a053-4ac5-90a5-f01f70b5c2be"}],
+                "external_file_metadata": [
+                    {"filename": "manifest-2024-04-26T18-59-21.226440.json"}
+                ],
             },
             True,
         ),
