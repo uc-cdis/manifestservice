@@ -82,7 +82,7 @@ def mocks(mocker):
     )
 
     all_mocks["_add_metadata_to_bucket"] = mocker.patch(
-        "manifestservice.manifests._add_manifest_to_bucket",
+        "manifestservice.manifests._add_metadata_to_bucket",
         return_value=("manifest-xxx.json", True),
     )
 
