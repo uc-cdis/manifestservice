@@ -3,7 +3,7 @@ import json as json_utils
 
 def test_POST_successful_metadata_add(client, mocks):
     """
-        Test the Export PFB to Workspace pathway: a cohort is added to the bucket.
+        Test the Export metadata to Workspace pathway: a metadata file is added to the bucket.
     Note that because s3 is being mocked, only an integration test can properly
     verify file creation.
     """
@@ -61,7 +61,6 @@ def test_GET_metadata(client, mocks):
     assert mocks["_authenticate_user"].call_count == 1
     assert mocks["_get_file_contents"].call_count == 0
     assert mocks["_add_metadata_to_bucket"].call_count == 0
-    assert mocks["_add_GUID_to_bucket"].call_count == 0
     assert mocks["_list_files_in_bucket"].call_count == 1
 
     json = r.json
