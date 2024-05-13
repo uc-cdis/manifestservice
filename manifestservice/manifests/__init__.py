@@ -205,6 +205,137 @@ def put_pfb_guid():
     return flask.jsonify(ret), 200
 
 
+@blueprint.route("/metadata", methods=["GET"])
+def get_metadata():
+    """
+    List all exported metadata objects associated with user
+    ---
+    responses:
+        200:
+            description: Success
+        403:
+            description: Unauthorized
+    """
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+
+    folder_name = _get_folder_name_from_token(current_token)
+    result, ok = _list_files_in_bucket(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
+    )
+    if not ok:
+        json_to_return = {"error": "Currently unable to connect to s3."}
+        return flask.jsonify(json_to_return), 500
+
+    json_to_return = {"external_file_metadata": result["metadata"]}
+
+    return flask.jsonify(json_to_return), 200
+
+
+@blueprint.route("/metadata/<file_name>", methods=["GET"])
+def get_metadata_file(file_name):
+    """
+    List all exported metadata objects associated with user
+    ---
+    responses:
+        200:
+            description: Success
+        403:
+            description: Unauthorized
+        400:
+            description: Bad request format
+    """
+
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+
+    file_name = html.escape(file_name)
+    if not file_name.endswith("json"):
+        json_to_return = {
+            "error": "Incorrect usage. You can only use this pathway to request files of type JSON."
+        }
+        return flask.jsonify(json_to_return), 400
+
+    folder_name = _get_folder_name_from_token(current_token) + "/exported-metadata"
+
+    return _get_file_contents(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name, file_name
+    )
+
+
+@blueprint.route("/metadata", methods=["PUT", "POST"])
+def put_metadata():
+    """
+    Create an exported metadata object
+    ---
+    responses:
+        200:
+            description: Success
+            example: '({ "filename": "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)'
+        403:
+            description: Unauthorized
+            example: '({ "error": "<error-message>" }, 403)'
+        400:
+            description: Bad GUID format
+            example: '({ "error": "<error-message>" }, 400)'
+    """
+
+    err, code = _authenticate_user()
+    if err is not None:
+        return err, code
+    if not flask.request.json:
+        return flask.jsonify({"error": "Please provide valid JSON."}), 400
+
+    metadata_body = flask.request.json
+
+    result, ok = _add_metadata_to_bucket(current_token, metadata_body)
+
+    if not ok:
+        json_to_return = {"error": "Currently unable to connect to s3."}
+        return flask.jsonify(json_to_return), 500
+
+    ret = {"filename": result}
+
+    return flask.jsonify(ret), 200
+
+
+def _add_metadata_to_bucket(current_token, metadata_body):
+    """
+    Creates a new file in the user's folder at user-<id>/metadata/exported-data/
+    with a filename corresponding to the GUID provided by the user.
+    """
+    session = boto3.Session(
+        region_name="us-east-1",
+    )
+    s3 = session.resource("s3")
+
+    folder_name = _get_folder_name_from_token(current_token)
+
+    result, ok = _list_files_in_bucket(
+        flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
+    )
+
+    if not ok:
+        return None, False
+    filename = _generate_unique_filename(
+        result["metadata"],
+    )
+
+    metadata_as_bytes = str.encode(str(metadata_body))
+    filepath_in_bucket = folder_name + "/exported-metadata/" + filename
+    try:
+        obj = s3.Object(
+            flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
+        )
+        response = obj.put(Body=metadata_as_bytes)
+    except Exception as e:
+        return str(e), False
+
+    return filename, True
+
+
 def _add_manifest_to_bucket(current_token, manifest_json):
     """
     Puts the manifest_json string into a file and uploads it to s3.
@@ -223,9 +354,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     if not ok:
         return result, False
 
-    filename = _generate_unique_manifest_filename(
-        folder_name,
-        flask.current_app.config.get("MANIFEST_BUCKET_NAME"),
+    filename = _generate_unique_filename(
         result["manifests"],
     )
     manifest_as_bytes = str.encode(str(flask.request.json))
@@ -305,15 +434,17 @@ def is_valid_manifest(manifest_json, required_keys):
     return True
 
 
-def _generate_unique_manifest_filename(
-    folder_name, manifest_bucket_name, users_existing_manifest_files
+def _generate_unique_filename(
+    users_existing_manifest_or_metadata_files,
 ):
     """
     Returns a filename of the form manifest-<timestamp>-<optional-increment>.json that is
     unique among the files in the user's manifest folder.
     """
     timestamp = datetime.now().isoformat()
-    existing_filenames = map(lambda x: x["filename"], users_existing_manifest_files)
+    existing_filenames = map(
+        lambda x: x["filename"], users_existing_manifest_or_metadata_files
+    )
     filename = _generate_unique_filename_with_timestamp_and_increment(
         timestamp, existing_filenames
     )
@@ -354,7 +485,11 @@ def _list_files_in_bucket(bucket_name, folder):
         "cohorts": [
             # For files in the cohorts/ folder
             { "filename": <filename>, "last_modified": <timestamp> }, ...
-        ]
+        ],
+        "metadata": [
+            # For files in the exported-metadata/ folder
+            { "filename": <filename>, "last_modified": <timestamp> }, ...
+        ],
     }
     """
     session = boto3.Session(
@@ -364,6 +499,7 @@ def _list_files_in_bucket(bucket_name, folder):
 
     manifests = []
     guids = []
+    metadata = []
     bucket = s3.Bucket(bucket_name)
 
     try:
@@ -377,12 +513,15 @@ def _list_files_in_bucket(bucket_name, folder):
                     object_summary.last_modified
                 ),
             }
-            if not "cohorts/" in object_summary.key:
-                file_marker["filename"] = ntpath.basename(object_summary.key)
-                manifests.append(file_marker)
-            else:
+            if "cohorts/" in object_summary.key:
                 file_marker["filename"] = object_summary.key.split("cohorts/")[1]
                 guids.append(file_marker)
+            elif "metadata/" in object_summary.key:
+                file_marker["filename"] = object_summary.key.split("metadata/")[1]
+                metadata.append(file_marker)
+            else:
+                file_marker["filename"] = ntpath.basename(object_summary.key)
+                manifests.append(file_marker)
     except Exception as e:
         logger.error(
             'Failed to list files in bucket "{}" folder "{}": {}'.format(
@@ -393,8 +532,13 @@ def _list_files_in_bucket(bucket_name, folder):
 
     manifests_sorted = sorted(manifests, key=lambda i: i["last_modified_timestamp"])
     guids_sorted = sorted(guids, key=lambda i: i["last_modified_timestamp"])
+    metadata_sorted = sorted(metadata, key=lambda i: i["last_modified_timestamp"])
 
-    rv = {"manifests": manifests_sorted, "cohorts": guids_sorted}
+    rv = {
+        "manifests": manifests_sorted,
+        "cohorts": guids_sorted,
+        "metadata": metadata_sorted,
+    }
     return rv, True
 
 
