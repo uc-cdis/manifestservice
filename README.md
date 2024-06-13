@@ -1,4 +1,5 @@
 # Manifest Service
+
 ### Overview
 This service handles reading from and writing to a user's s3 folder containing their manifests. A manifest is a JSON file that lists records a researcher may be interested in analyzing. This service stores a manifest to a user folder in an s3 bucket and delivers it for later use, such as when the researcher wants to mount the manifest in their workspace. If the "prefix" config variable is set, user folders will be stored in a directory of that name within the s3 bucket.
 
@@ -48,10 +49,29 @@ Create a cohort GUID in the user's folder:
     Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe" }
     Returns: { "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe" }
 
+Lists a user's exported metadata objects:
+
+    GET /metadata
+    Returns: { "metadata" : [ { "filename" : "metadata-2024-06-13T17-14-46.026593.json", "last_modified" : "2024-06-13 17:14:47" }, ... ] }
+
+Create an exported metadata object in the user's folder:
+
+    POST /metadata
+    Post body: { "some_metadata_key": "some_metadata_value" }
+    Returns: { "filename" : "metadata-2024-06-13T17-14-46.026593.json" }
+
+Read the contents of an exported metadata object file in the user's folder:
+
+    GET /metadata/<filename.json>
+    Returns: { "body" : "the-body-of-the-exported-metadata-object-file-as-a-string" }
+
 On failure, the above endpoints all return JSON in the form
 
     { "error" : "error-message" }
 
+### OpenAPI spec
+
+The [OpenAPI](https://github.com/OAI/OpenAPI-Specification)/[Swagger 2.0](https://swagger.io/) specification of a service is stored in its `swagger.yaml` and can be visualized [here](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/manifestservice/master/openapi/swagger.yaml).
 
 ### Running the service locally
 If you want to run this service locally, fill out the config.json file with the correct values and then run:

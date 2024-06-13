@@ -1,5 +1,17 @@
 import json as json_utils
+from manifestservice import manifests
 
+def test_generate_unique_metadata_filename_basic_date_generation():
+    """
+    Tests that the _generate_unique_filename_with_timestamp_and_increment() function
+    generates a unique filename for metadata file.
+    """
+    timestamp = "a-b-c"
+    users_existing_metadata_files = []
+    filename = manifests._generate_unique_filename_with_timestamp_and_increment(
+        timestamp, users_existing_metadata_files, file_type="metadata"
+    )
+    assert filename == "metadata-a-b-c.json"
 
 def test_POST_successful_metadata_add(client, mocks):
     """
@@ -68,7 +80,7 @@ def test_GET_metadata(client, mocks):
     assert len(metadata_returned) == 1
     # From the s3 mock
     assert (
-        metadata_returned[0]["filename"] == "manifest-2024-04-26T18-59-21.226440.json"
+        metadata_returned[0]["filename"] == "metadata-2024-04-26T18-59-21.226440.json"
     )
 
 
