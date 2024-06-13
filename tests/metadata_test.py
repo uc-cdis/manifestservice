@@ -68,7 +68,7 @@ def test_GET_metadata(client, mocks):
     assert len(metadata_returned) == 1
     # From the s3 mock
     assert (
-        metadata_returned[0]["filename"] == "manifest-2024-04-26T18-59-21.226440.json"
+        metadata_returned[0]["filename"] == "metadata-2024-04-26T18-59-21.226440.json"
     )
 
 

@@ -191,7 +191,7 @@ def put_pfb_guid():
 
     if not is_valid:
         return (
-            flask.jsonify({"error": "The provided GUID: {} is invalid.".format(GUID)}),
+            flask.jsonify({"error": f"The provided GUID: {GUID} is invalid."}),
             400,
         )
     result, ok = _add_GUID_to_bucket(current_token, GUID)
@@ -320,7 +320,7 @@ def _add_metadata_to_bucket(current_token, metadata_body):
     if not ok:
         return None, False
     filename = _generate_unique_filename(
-        result["metadata"],
+        result["metadata"], file_type="metadata"
     )
 
     metadata_as_bytes = str.encode(str(metadata_body))
@@ -329,7 +329,7 @@ def _add_metadata_to_bucket(current_token, metadata_body):
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        response = obj.put(Body=metadata_as_bytes)
+        obj.put(Body=metadata_as_bytes)
     except Exception as e:
         return str(e), False
 
@@ -364,9 +364,9 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        response = obj.put(Body=manifest_as_bytes)
+        obj.put(Body=manifest_as_bytes)
     except Exception as e:
-        logger.error("Failed to add manifest to bucket: {}".format(e))
+        logger.error(f"Failed to add manifest to bucket: {e}")
         return str(e), False
 
     return filename, True
@@ -398,7 +398,7 @@ def _add_GUID_to_bucket(current_token, GUID):
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        response = obj.put(Body=str.encode(""))
+        obj.put(Body=str.encode(""))
     except Exception as e:
         return str(e), False
 
@@ -435,7 +435,7 @@ def is_valid_manifest(manifest_json, required_keys):
 
 
 def _generate_unique_filename(
-    users_existing_manifest_or_metadata_files,
+    users_existing_manifest_or_metadata_files, file_type="manifest"
 ):
     """
     Returns a filename of the form manifest-<timestamp>-<optional-increment>.json that is
@@ -446,20 +446,23 @@ def _generate_unique_filename(
         lambda x: x["filename"], users_existing_manifest_or_metadata_files
     )
     filename = _generate_unique_filename_with_timestamp_and_increment(
-        timestamp, existing_filenames
+        timestamp, existing_filenames, file_type
     )
     return filename
 
 
 def _generate_unique_filename_with_timestamp_and_increment(
-    timestamp, users_existing_manifest_files
+    timestamp, users_existing_manifest_files, file_type
 ):
     """
     A helper function for _generate_unique_manifest_filename(), which facilitates unit testing.
     Adds an increment to the filename if there happens to be another timestamped file with the same name
     (unlikely, but good to check).
     """
-    filename_without_extension = "manifest-" + timestamp.replace(":", "-")
+    filename_prefix="manifest-"
+    if file_type=="metadata":
+        filename_prefix="metadata-"
+    filename_without_extension = filename_prefix + timestamp.replace(":", "-")
     extension = ".json"
 
     filename = filename_without_extension + extension
@@ -524,9 +527,7 @@ def _list_files_in_bucket(bucket_name, folder):
                 manifests.append(file_marker)
     except Exception as e:
         logger.error(
-            'Failed to list files in bucket "{}" folder "{}": {}'.format(
-                bucket_name, folder, e
-            )
+            f'Failed to list files in bucket "{bucket_name}" folder "{folder}": {e}'
         )
         return str(e), False
 
@@ -572,6 +573,9 @@ def _authenticate_user():
 
 
 def is_valid_GUID(GUID):
+    """
+    Check if input value is a valid GUID
+    """
     regex = re.compile(
         "^.*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
         re.I,

@@ -52,13 +52,13 @@ Create a cohort GUID in the user's folder:
 Lists a user's exported metadata objects:
 
     GET /metadata
-    Returns: { "metadata" : [ { "filename" : "manifest-2024-06-13T17-14-46.026593.json", "last_modified" : "2024-06-13 17:14:47" }, ... ] }
+    Returns: { "metadata" : [ { "filename" : "metadata-2024-06-13T17-14-46.026593.json", "last_modified" : "2024-06-13 17:14:47" }, ... ] }
 
 Create an exported metadata object in the user's folder:
 
     POST /metadata
     Post body: { "some_metadata_key": "some_metadata_value" }
-    Returns: { "filename" : "manifest-2024-06-13T17-14-46.026593.json" }
+    Returns: { "filename" : "metadata-2024-06-13T17-14-46.026593.json" }
 
 Read the contents of an exported metadata object file in the user's folder:
 
