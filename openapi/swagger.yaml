@@ -83,4 +83,46 @@ paths:
         '403':
           description: Unauthorized
       summary: Returns the requested manifest file from the user's folder.
+  /metadata:
+    get:
+      responses:
+        '200':
+          description: Success
+        '403':
+          description: Unauthorized
+      summary: List all exported metadata objects associated with user
+    post:
+      responses:
+        '200':
+          description: Success
+          example: '({ "filename": "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)'
+        '400':
+          description: Bad GUID format
+          example: '({ "error": "<error-message>" }, 400)'
+        '403':
+          description: Unauthorized
+          example: '({ "error": "<error-message>" }, 403)'
+      summary: Create an exported metadata object
+    put:
+      responses:
+        '200':
+          description: Success
+          example: '({ "filename": "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)'
+        '400':
+          description: Bad GUID format
+          example: '({ "error": "<error-message>" }, 400)'
+        '403':
+          description: Unauthorized
+          example: '({ "error": "<error-message>" }, 403)'
+      summary: Create an exported metadata object
+  /metadata/{file_name}:
+    get:
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request format
+        '403':
+          description: Unauthorized
+      summary: List all exported metadata objects associated with user
 swagger: '2.0'
