@@ -452,7 +452,7 @@ def _generate_unique_filename(
 
 
 def _generate_unique_filename_with_timestamp_and_increment(
-    timestamp, users_existing_manifest_files, file_type
+    timestamp, users_existing_manifest_files, file_type="manifest"
 ):
     """
     A helper function for _generate_unique_manifest_filename(), which facilitates unit testing.
