@@ -273,7 +273,7 @@ def put_metadata():
     responses:
         200:
             description: Success
-            example: '({ "filename": "5183a350-9d56-4084-8a03-6471cafeb7fe" }, 200)'
+            example: '({ "filename": "metadata-2024-06-13T17-14-46.026593.json" }, 200)'
         403:
             description: Unauthorized
             example: '({ "error": "<error-message>" }, 403)'
