@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "manifestservice"
-version = "0.5.0"
+version = "0.5.2"
 description = "Handles reading from and writing to a user's s3 folder containing their manifests"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"

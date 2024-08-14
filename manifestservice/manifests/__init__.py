@@ -1,13 +1,12 @@
+import json
 import flask
 import html
 import boto3
 from flask import current_app as app
 import re
-import requests
 import ntpath
-from datetime import date, datetime
+from datetime import datetime
 from authutils.token.validate import current_token, validate_request, set_current_token
-from authutils import user as authutils_user
 from cdislogging import get_logger
 
 logger = get_logger("manifestservice_logger", log_level="info")
@@ -323,13 +322,12 @@ def _add_metadata_to_bucket(current_token, metadata_body):
         result["metadata"], file_type="metadata"
     )
 
-    metadata_as_bytes = str.encode(str(metadata_body))
     filepath_in_bucket = folder_name + "/exported-metadata/" + filename
     try:
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        obj.put(Body=metadata_as_bytes)
+        obj.put(Body=bytes(json.dumps(metadata_body).encode('UTF-8')))
     except Exception as e:
         return str(e), False
 
@@ -357,14 +355,13 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     filename = _generate_unique_filename(
         result["manifests"],
     )
-    manifest_as_bytes = str.encode(str(flask.request.json))
     filepath_in_bucket = folder_name + "/" + filename
 
     try:
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        obj.put(Body=manifest_as_bytes)
+        obj.put(Body=bytes(json.dumps(manifest_json).encode('UTF-8')))
     except Exception as e:
         logger.error(f"Failed to add manifest to bucket: {e}")
         return str(e), False
