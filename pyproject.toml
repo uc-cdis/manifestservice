@@ -15,7 +15,7 @@ Flask = "^2.3.2"
 authutils = "<7"
 boto3 = "^1.17.48"
 cryptography = ">=42.0.5"
-requests = "^2.32.0"
+requests = "^2.32.2"
 importlib-metadata = "^4.8.1"
 
 [tool.poetry.dev-dependencies]
