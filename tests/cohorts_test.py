@@ -1,3 +1,5 @@
+# pylint: disable=unused-argument
+
 import json as json_utils
 
 from manifestservice.manifests import _list_files_in_bucket

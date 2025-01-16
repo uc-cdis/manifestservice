@@ -1,3 +1,5 @@
+# pylint: disable=unused-argument
+
 import json as json_utils
 import random
 
