@@ -1,7 +1,8 @@
-import boto3
 from datetime import datetime
-import pytest
 from unittest.mock import MagicMock, patch
+
+import boto3
+import pytest
 
 from manifestservice.api import create_app
 

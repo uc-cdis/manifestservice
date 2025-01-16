@@ -1,23 +1,23 @@
-import flask
+import json
 import logging
+import os
 import time
 
-from .manifests import blueprint as manifests_bp
-import os
-import json
+import flask
 
-TRUSTED_CONFIG_PATH_PREFIXES  = [
-    os.getcwd(),
-    "/var/gen3"
-]
+from .manifests import blueprint as manifests_bp
+
+TRUSTED_CONFIG_PATH_PREFIXES = [os.getcwd(), "/var/gen3"]
+
 
 def validate_config_path(config_path):
     for trusted_path in TRUSTED_CONFIG_PATH_PREFIXES:
-        if os.path.commonpath((os.path.realpath(config_path), trusted_path)) == trusted_path:
+        if (
+            os.path.commonpath((os.path.realpath(config_path), trusted_path))
+            == trusted_path
+        ):
             return
-    raise ValueError(
-        "Illegal config file path provided as {}".format(config_path)
-    )
+    raise ValueError("Illegal config file path provided as {}".format(config_path))
 
 
 def create_app():

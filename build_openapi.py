@@ -1,11 +1,11 @@
 import collections
 
 import yaml
-from flasgger import Swagger, Flasgger
+from flasgger import Flasgger, Swagger
+from openapi.app_info import app_info
 from yaml.representer import Representer
 
 from manifestservice.api import app
-from openapi.app_info import app_info
 
 
 def write_swagger():

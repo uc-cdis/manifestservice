@@ -1,5 +1,7 @@
 import json as json_utils
+
 from manifestservice import manifests
+
 
 def test_generate_unique_metadata_filename_basic_date_generation():
     """
@@ -12,6 +14,7 @@ def test_generate_unique_metadata_filename_basic_date_generation():
         timestamp, users_existing_metadata_files, file_type="metadata"
     )
     assert filename == "metadata-a-b-c.json"
+
 
 def test_POST_successful_metadata_add(client, mocks):
     """
