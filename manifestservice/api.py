@@ -30,11 +30,11 @@ def create_app():
 
     try:
         validate_config_path(config_path)
-        with open(config_path) as f:
-            config_str = f.read()
+        with open(config_path) as config_file:
+            config_str = config_file.read()
             config_dict = json.loads(config_str)
-    except Exception as e:
-        print(e)
+    except Exception as err:
+        print(err)
         raise ValueError(f"Unable to parse the provided config file at {config_path}")
 
     for key in config_dict:

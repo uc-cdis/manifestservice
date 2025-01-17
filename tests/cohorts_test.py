@@ -29,7 +29,7 @@ def test_post_successful_guid_add(client, mocks):
     new_guid = json["filename"]
 
     assert new_guid is not None
-    assert type(new_guid) is str
+    assert isinstance(new_guid, str)
 
 
 def test_get_cohorts(client, mocks):

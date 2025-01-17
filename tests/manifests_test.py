@@ -1,4 +1,4 @@
-# pylint: disable=unused-argument
+# pylint: disable=protected-access, unused-argument
 
 import json as json_utils
 import random

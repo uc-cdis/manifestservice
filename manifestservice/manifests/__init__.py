@@ -309,7 +309,7 @@ def _add_metadata_to_bucket(current_token, metadata_body):
     session = boto3.Session(
         region_name="us-east-1",
     )
-    s3 = session.resource("s3")
+    s3_session = session.resource("s3")
 
     folder_name = _get_folder_name_from_token(current_token)
 
@@ -323,12 +323,12 @@ def _add_metadata_to_bucket(current_token, metadata_body):
 
     filepath_in_bucket = folder_name + "/exported-metadata/" + filename
     try:
-        obj = s3.Object(
+        obj = s3_session.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
         obj.put(Body=bytes(json.dumps(metadata_body).encode("UTF-8")))
-    except Exception as e:
-        return str(e), False
+    except Exception as err:
+        return str(err), False
 
     return filename, True
 
@@ -341,7 +341,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     session = boto3.Session(
         region_name="us-east-1",
     )
-    s3 = session.resource("s3")
+    s3_session = session.resource("s3")
 
     folder_name = _get_folder_name_from_token(current_token)
 
@@ -357,18 +357,18 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     filepath_in_bucket = folder_name + "/" + filename
 
     try:
-        obj = s3.Object(
+        obj = s3_session.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
         obj.put(Body=bytes(json.dumps(manifest_json).encode("UTF-8")))
-    except Exception as e:
-        logger.error(f"Failed to add manifest to bucket: {e}")
-        return str(e), False
+    except Exception as err:
+        logger.error(f"Failed to add manifest to bucket: {err}")
+        return str(err), False
 
     return filename, True
 
 
-def _add_guid_to_bucket(current_token, GUID):
+def _add_guid_to_bucket(current_token, guid):
     """
     Creates a new file in the user's folder at user-<id>/cohorts/
     with a filename corresponding to the GUID provided by the user.
@@ -376,7 +376,7 @@ def _add_guid_to_bucket(current_token, GUID):
     session = boto3.Session(
         region_name="us-east-1",
     )
-    s3 = session.resource("s3")
+    s3_session = session.resource("s3")
 
     folder_name = _get_folder_name_from_token(current_token)
 
@@ -386,19 +386,19 @@ def _add_guid_to_bucket(current_token, GUID):
 
     if not ok:
         return None, False
-    if GUID in existing_files:
-        return GUID, True
+    if guid in existing_files:
+        return guid, True
 
-    filepath_in_bucket = folder_name + "/cohorts/" + GUID
+    filepath_in_bucket = folder_name + "/cohorts/" + guid
     try:
-        obj = s3.Object(
+        obj = s3_session.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
         obj.put(Body=str.encode(""))
-    except Exception as e:
-        return str(e), False
+    except Exception as err:
+        return str(err), False
 
-    return GUID, True
+    return guid, True
 
 
 def _get_folder_name_from_token(user_info):
@@ -494,12 +494,12 @@ def _list_files_in_bucket(bucket_name, folder):
     session = boto3.Session(
         region_name="us-east-1",
     )
-    s3 = session.resource("s3")
+    s3_session = session.resource("s3")
 
     manifests = []
     guids = []
     metadata = []
-    bucket = s3.Bucket(bucket_name)
+    bucket = s3_session.Bucket(bucket_name)
 
     try:
         bucket_objects = bucket.objects.filter(Prefix=folder + "/")
@@ -521,22 +521,22 @@ def _list_files_in_bucket(bucket_name, folder):
             else:
                 file_marker["filename"] = ntpath.basename(object_summary.key)
                 manifests.append(file_marker)
-    except Exception as e:
+    except Exception as err:
         logger.error(
-            f'Failed to list files in bucket "{bucket_name}" folder "{folder}": {e}'
+            f'Failed to list files in bucket "{bucket_name}" folder "{folder}": {err}'
         )
-        return str(e), False
+        return str(err), False
 
     manifests_sorted = sorted(manifests, key=lambda i: i["last_modified_timestamp"])
     guids_sorted = sorted(guids, key=lambda i: i["last_modified_timestamp"])
     metadata_sorted = sorted(metadata, key=lambda i: i["last_modified_timestamp"])
 
-    rv = {
+    files_in_bucket = {
         "manifests": manifests_sorted,
         "cohorts": guids_sorted,
         "metadata": metadata_sorted,
     }
-    return rv, True
+    return files_in_bucket, True
 
 
 def _get_file_contents(bucket_name, folder, filename):
@@ -560,8 +560,8 @@ def _authenticate_user():
     audience = flask.current_app.config["OIDC_ISSUER"]
     try:
         set_current_token(validate_request(scope={"user"}, audience=audience))
-    except Exception as e:
-        logger.error(e)
+    except Exception as err:
+        logger.error(err)
         json_to_return = {"error": "Please log in."}
         return flask.jsonify(json_to_return), 403
 

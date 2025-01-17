@@ -14,9 +14,9 @@ def write_swagger():
     """
     yaml.add_representer(collections.defaultdict, Representer.represent_dict)
     outfile = "openapi/swagger.yaml"
-    with open(outfile, "w") as f:
+    with open(outfile, "w") as swagger_file:
         data = Flasgger.get_apispecs(swagger)
-        yaml.dump(data, f, default_flow_style=False)
+        yaml.dump(data, swagger_file, default_flow_style=False)
         print("Generated docs")
 
 
@@ -25,5 +25,5 @@ if __name__ == "__main__":
         with app.app_context():
             swagger = Swagger(app, template=app_info)
             write_swagger()
-    except Exception as e:
-        print(f"Could not generate docs: {e}")
+    except Exception as err:
+        print(f"Could not generate docs: {err}")

@@ -10,9 +10,11 @@ def test_generate_unique_metadata_filename_basic_date_generation():
     """
     timestamp = "a-b-c"
     users_existing_metadata_files = []
+    # pylint: disable=protected-access
     filename = manifests._generate_unique_filename_with_timestamp_and_increment(
         timestamp, users_existing_metadata_files, file_type="metadata"
     )
+    # pylint: enable=protected-access
     assert filename == "metadata-a-b-c.json"
 
 
