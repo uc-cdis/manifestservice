@@ -77,8 +77,8 @@ def mocks(mocker):
         "manifestservice.manifests._get_file_contents", return_value=""
     )
 
-    all_mocks["_add_GUID_to_bucket"] = mocker.patch(
-        "manifestservice.manifests._add_GUID_to_bucket",
+    all_mocks["_add_guid_to_bucket"] = mocker.patch(
+        "manifestservice.manifests._add_guid_to_bucket",
         return_value=("a-guid-value", True),
     )
 

@@ -26,4 +26,4 @@ if __name__ == "__main__":
             swagger = Swagger(app, template=app_info)
             write_swagger()
     except Exception as e:
-        print("Could not generate docs: {}".format(e))
+        print(f"Could not generate docs: {e}")

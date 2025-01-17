@@ -186,15 +186,15 @@ def put_pfb_guid():
         return flask.jsonify({"error": "Please provide valid JSON."}), 400
 
     post_body = flask.request.json
-    GUID = post_body.get("guid")
-    is_valid = is_valid_GUID(GUID)
+    guid = post_body.get("guid")
+    is_valid = is_valid_guid(guid)
 
     if not is_valid:
         return (
-            flask.jsonify({"error": f"The provided GUID: {GUID} is invalid."}),
+            flask.jsonify({"error": f"The provided GUID: {guid} is invalid."}),
             400,
         )
-    result, ok = _add_GUID_to_bucket(current_token, GUID)
+    result, ok = _add_guid_to_bucket(current_token, guid)
 
     if not ok:
         json_to_return = {"error": "Currently unable to connect to s3."}
@@ -368,7 +368,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
     return filename, True
 
 
-def _add_GUID_to_bucket(current_token, GUID):
+def _add_guid_to_bucket(current_token, GUID):
     """
     Creates a new file in the user's folder at user-<id>/cohorts/
     with a filename corresponding to the GUID provided by the user.
@@ -568,7 +568,7 @@ def _authenticate_user():
     return None, None
 
 
-def is_valid_GUID(GUID):
+def is_valid_guid(guid):
     """
     Check if input value is a valid GUID
     """
@@ -576,5 +576,5 @@ def is_valid_GUID(GUID):
         "^.*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
         re.I,
     )
-    match = regex.match(str(GUID))
+    match = regex.match(str(guid))
     return bool(match)
