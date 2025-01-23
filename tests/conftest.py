@@ -56,21 +56,18 @@ def mocks(mocker):
 
     all_mocks["_list_files_in_bucket"] = mocker.patch(
         "manifestservice.manifests._list_files_in_bucket",
-        return_value=(
-            {
-                "manifests": [
-                    {"filename": "manifest-a-b-c.json"},
-                ],
-                "cohorts": [{"filename": "18e32c12-a053-4ac5-90a5-f01f70b5c2be"}],
-                "metadata": [{"filename": "metadata-2024-04-26T18-59-21.226440.json"}],
-            },
-            True,
-        ),
+        return_value={
+            "manifests": [
+                {"filename": "manifest-a-b-c.json"},
+            ],
+            "cohorts": [{"filename": "18e32c12-a053-4ac5-90a5-f01f70b5c2be"}],
+            "metadata": [{"filename": "metadata-2024-04-26T18-59-21.226440.json"}],
+        },
     )
 
     all_mocks["_add_manifest_to_bucket"] = mocker.patch(
         "manifestservice.manifests._add_manifest_to_bucket",
-        return_value=("manifest-xxx.json", True),
+        return_value="manifest-xxx.json",
     )
 
     all_mocks["_get_file_contents"] = mocker.patch(
@@ -78,13 +75,12 @@ def mocks(mocker):
     )
 
     all_mocks["_add_guid_to_bucket"] = mocker.patch(
-        "manifestservice.manifests._add_guid_to_bucket",
-        return_value=("a-guid-value", True),
+        "manifestservice.manifests._add_guid_to_bucket", return_value="a-guid-value"
     )
 
     all_mocks["_add_metadata_to_bucket"] = mocker.patch(
         "manifestservice.manifests._add_metadata_to_bucket",
-        return_value=("manifest-xxx.json", True),
+        return_value="manifest-xxx.json",
     )
 
     return all_mocks

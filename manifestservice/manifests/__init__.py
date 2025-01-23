@@ -35,14 +35,14 @@ def get_manifests():
 
     folder_name = _get_folder_name_from_token(current_token)
 
-    result, ok = _list_files_in_bucket(
+    files_in_bucket = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
-    if not ok:
+    if not files_in_bucket:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
-    json_to_return = {"manifests": result["manifests"]}
+    json_to_return = {"manifests": files_in_bucket["manifests"]}
 
     return flask.jsonify(json_to_return), 200
 
@@ -106,22 +106,23 @@ def put_manifest():
     required_keys = ["object_id"]
     is_valid = is_valid_manifest(manifest_json, required_keys)
     if not is_valid:
-        return (
-            flask.jsonify(
-                {
-                    "error": "Manifest format is invalid. Please POST a list of key-value pairs, like [{'k' : v}, ...] Required keys are: "
+        return flask.jsonify(
+            {
+                "error": (
+                    "Manifest format is invalid. Please POST a list of key-value pairs"
+                    + ", like [{'k' : v}, ...] Required keys are: "
                     + " ".join(required_keys)
-                }
-            ),
+                )
+            },
             400,
         )
 
-    result, ok = _add_manifest_to_bucket(current_token, manifest_json)
-    if not ok:
+    filename = _add_manifest_to_bucket(current_token, manifest_json)
+    if not filename:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
-    ret = {"filename": result}
+    ret = {"filename": filename}
 
     return flask.jsonify(ret), 200
 
@@ -146,14 +147,14 @@ def get_cohorts():
 
     folder_name = _get_folder_name_from_token(current_token)
 
-    result, ok = _list_files_in_bucket(
+    files_in_bucket = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
-    if not ok:
+    if not files_in_bucket:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
-    json_to_return = {"cohorts": result["cohorts"]}
+    json_to_return = {"cohorts": files_in_bucket["cohorts"]}
 
     return flask.jsonify(json_to_return), 200
 
@@ -194,9 +195,9 @@ def put_pfb_guid():
             flask.jsonify({"error": f"The provided GUID: {guid} is invalid."}),
             400,
         )
-    result, ok = _add_guid_to_bucket(current_token, guid)
+    result = _add_guid_to_bucket(current_token, guid)
 
-    if not ok:
+    if not result:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
@@ -221,14 +222,14 @@ def get_metadata():
         return err, code
 
     folder_name = _get_folder_name_from_token(current_token)
-    result, ok = _list_files_in_bucket(
+    files_in_bucket = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
-    if not ok:
+    if not files_in_bucket:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
-    json_to_return = {"external_file_metadata": result["metadata"]}
+    json_to_return = {"external_file_metadata": files_in_bucket["metadata"]}
 
     return flask.jsonify(json_to_return), 200
 
@@ -290,9 +291,9 @@ def put_metadata():
 
     metadata_body = flask.request.json
 
-    result, ok = _add_metadata_to_bucket(current_token, metadata_body)
+    result = _add_metadata_to_bucket(current_token, metadata_body)
 
-    if not ok:
+    if not result:
         json_to_return = {"error": "Currently unable to connect to s3."}
         return flask.jsonify(json_to_return), 500
 
@@ -313,13 +314,15 @@ def _add_metadata_to_bucket(current_token, metadata_body):
 
     folder_name = _get_folder_name_from_token(current_token)
 
-    result, ok = _list_files_in_bucket(
+    files_in_bucket = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
 
-    if not ok:
-        return None, False
-    filename = _generate_unique_filename(result["metadata"], file_type="metadata")
+    if not files_in_bucket:
+        return None
+    filename = _generate_unique_filename(
+        files_in_bucket["metadata"], file_type="metadata"
+    )
 
     filepath_in_bucket = folder_name + "/exported-metadata/" + filename
     try:
@@ -328,9 +331,10 @@ def _add_metadata_to_bucket(current_token, metadata_body):
         )
         obj.put(Body=bytes(json.dumps(metadata_body).encode("UTF-8")))
     except Exception as err:
-        return str(err), False
+        logger.error(f"Failed to add metadata to bucket: {err}")
+        return None
 
-    return filename, True
+    return filename
 
 
 def _add_manifest_to_bucket(current_token, manifest_json):
@@ -345,14 +349,15 @@ def _add_manifest_to_bucket(current_token, manifest_json):
 
     folder_name = _get_folder_name_from_token(current_token)
 
-    result, ok = _list_files_in_bucket(
+    files_in_bucket = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
-    if not ok:
-        return result, False
+    if not files_in_bucket:
+        logger.error("Failed to get filenames in bucket")
+        return None
 
     filename = _generate_unique_filename(
-        result["manifests"],
+        files_in_bucket["manifests"],
     )
     filepath_in_bucket = folder_name + "/" + filename
 
@@ -363,9 +368,9 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         obj.put(Body=bytes(json.dumps(manifest_json).encode("UTF-8")))
     except Exception as err:
         logger.error(f"Failed to add manifest to bucket: {err}")
-        return str(err), False
+        return None
 
-    return filename, True
+    return filename
 
 
 def _add_guid_to_bucket(current_token, guid):
@@ -380,14 +385,14 @@ def _add_guid_to_bucket(current_token, guid):
 
     folder_name = _get_folder_name_from_token(current_token)
 
-    existing_files, ok = _list_files_in_bucket(
+    existing_files = _list_files_in_bucket(
         flask.current_app.config.get("MANIFEST_BUCKET_NAME"), folder_name
     )
 
-    if not ok:
-        return None, False
+    if not existing_files:
+        return None
     if guid in existing_files:
-        return guid, True
+        return guid
 
     filepath_in_bucket = folder_name + "/cohorts/" + guid
     try:
@@ -396,9 +401,10 @@ def _add_guid_to_bucket(current_token, guid):
         )
         obj.put(Body=str.encode(""))
     except Exception as err:
-        return str(err), False
+        logger.error(f"Failed to add guid to bucket: {err}")
+        return None
 
-    return guid, True
+    return guid
 
 
 def _get_folder_name_from_token(user_info):
@@ -525,7 +531,7 @@ def _list_files_in_bucket(bucket_name, folder):
         logger.error(
             f'Failed to list files in bucket "{bucket_name}" folder "{folder}": {err}'
         )
-        return str(err), False
+        return None
 
     manifests_sorted = sorted(manifests, key=lambda i: i["last_modified_timestamp"])
     guids_sorted = sorted(guids, key=lambda i: i["last_modified_timestamp"])
@@ -536,7 +542,7 @@ def _list_files_in_bucket(bucket_name, folder):
         "cohorts": guids_sorted,
         "metadata": metadata_sorted,
     }
-    return files_in_bucket, True
+    return files_in_bucket
 
 
 def _get_file_contents(bucket_name, folder, filename):

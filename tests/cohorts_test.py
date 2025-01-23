@@ -73,8 +73,8 @@ def test_list_files_in_bucket(client, mocked_bucket):
     Test that prefixes are not removed from GUIDs when listing cohorts
     in buckets
     """
-    result, ok = _list_files_in_bucket("fake_bucket_name", "fake_folder")
-    assert ok, result
+    result = _list_files_in_bucket("fake_bucket_name", "fake_folder")
+    assert result
 
     manifests = result["manifests"]
     assert len(manifests) == 1
