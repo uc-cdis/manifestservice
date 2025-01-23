@@ -106,14 +106,16 @@ def put_manifest():
     required_keys = ["object_id"]
     is_valid = is_valid_manifest(manifest_json, required_keys)
     if not is_valid:
-        return flask.jsonify(
-            {
-                "error": (
-                    "Manifest format is invalid. Please POST a list of key-value pairs"
-                    + ", like [{'k' : v}, ...] Required keys are: "
-                    + " ".join(required_keys)
-                )
-            },
+        return (
+            flask.jsonify(
+                {
+                    "error": (
+                        "Manifest format is invalid. Please POST a list of key-value pairs"
+                        + ", like [{'k' : v}, ...] Required keys are: "
+                        + " ".join(required_keys)
+                    )
+                }
+            ),
             400,
         )
 
@@ -432,7 +434,6 @@ def is_valid_manifest(manifest_json, required_keys):
         record_keys = record.keys()
         if not set(required_keys).issubset(record_keys):
             return False
-
     return True
 
 
