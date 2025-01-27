@@ -8,6 +8,34 @@ import pytest
 
 from manifestservice.api import create_app
 
+TEST_USER_DATA = {
+    "context": {
+        "user": {
+            "policies": [
+                "data_upload",
+                "programs.test-read-storage",
+                "programs.test-read",
+            ],
+            "google": {"proxy_group": None},
+            "is_admin": True,
+            "name": "example@uchicago.edu",
+            "projects": {
+                "test": [
+                    "read-storage",
+                    "read",
+                    "create",
+                    "write-storage",
+                    "upload",
+                    "update",
+                    "delete",
+                ]
+            },
+        }
+    },
+    "aud": ["data", "user", "fence", "openid"],
+    "sub": "18",
+}
+
 
 @pytest.fixture
 def app():
@@ -17,33 +45,7 @@ def app():
 
 @pytest.fixture
 def mocks(mocker):
-    test_user = {
-        "context": {
-            "user": {
-                "policies": [
-                    "data_upload",
-                    "programs.test-read-storage",
-                    "programs.test-read",
-                ],
-                "google": {"proxy_group": None},
-                "is_admin": True,
-                "name": "example@uchicago.edu",
-                "projects": {
-                    "test": [
-                        "read-storage",
-                        "read",
-                        "create",
-                        "write-storage",
-                        "upload",
-                        "update",
-                        "delete",
-                    ]
-                },
-            }
-        },
-        "aud": ["data", "user", "fence", "openid"],
-        "sub": "18",
-    }
+    test_user = TEST_USER_DATA
     all_mocks = {}
 
     all_mocks["current_token"] = mocker.patch(
@@ -88,33 +90,7 @@ def mocks(mocker):
 
 @pytest.fixture
 def broken_s3_mocks(mocker):
-    test_user = {
-        "context": {
-            "user": {
-                "policies": [
-                    "data_upload",
-                    "programs.test-read-storage",
-                    "programs.test-read",
-                ],
-                "google": {"proxy_group": None},
-                "is_admin": True,
-                "name": "example@uchicago.edu",
-                "projects": {
-                    "test": [
-                        "read-storage",
-                        "read",
-                        "create",
-                        "write-storage",
-                        "upload",
-                        "update",
-                        "delete",
-                    ]
-                },
-            }
-        },
-        "aud": ["data", "user", "fence", "openid"],
-        "sub": "18",
-    }
+    test_user = TEST_USER_DATA
     all_mocks = {}
 
     all_mocks["current_token"] = mocker.patch(
