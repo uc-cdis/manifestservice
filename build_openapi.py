@@ -1,11 +1,11 @@
 import collections
 
 import yaml
-from flasgger import Swagger, Flasgger
+from flasgger import Flasgger, Swagger
+from openapi.app_info import app_info
 from yaml.representer import Representer
 
 from manifestservice.api import app
-from openapi.app_info import app_info
 
 
 def write_swagger():
@@ -14,9 +14,9 @@ def write_swagger():
     """
     yaml.add_representer(collections.defaultdict, Representer.represent_dict)
     outfile = "openapi/swagger.yaml"
-    with open(outfile, "w") as f:
+    with open(outfile, "w") as swagger_file:
         data = Flasgger.get_apispecs(swagger)
-        yaml.dump(data, f, default_flow_style=False)
+        yaml.dump(data, swagger_file, default_flow_style=False)
         print("Generated docs")
 
 
@@ -25,5 +25,5 @@ if __name__ == "__main__":
         with app.app_context():
             swagger = Swagger(app, template=app_info)
             write_swagger()
-    except Exception as e:
-        print("Could not generate docs: {}".format(e))
+    except Exception as err:
+        print(f"Could not generate docs: {err}")

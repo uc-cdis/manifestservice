@@ -1,9 +1,40 @@
-import boto3
+# pylint: disable=missing-function-docstring
+
 from datetime import datetime
-import pytest
 from unittest.mock import MagicMock, patch
 
+import boto3
+import pytest
+
 from manifestservice.api import create_app
+
+TEST_USER_DATA = {
+    "context": {
+        "user": {
+            "policies": [
+                "data_upload",
+                "programs.test-read-storage",
+                "programs.test-read",
+            ],
+            "google": {"proxy_group": None},
+            "is_admin": True,
+            "name": "example@uchicago.edu",
+            "projects": {
+                "test": [
+                    "read-storage",
+                    "read",
+                    "create",
+                    "write-storage",
+                    "upload",
+                    "update",
+                    "delete",
+                ]
+            },
+        }
+    },
+    "aud": ["data", "user", "fence", "openid"],
+    "sub": "18",
+}
 
 
 @pytest.fixture
@@ -14,33 +45,7 @@ def app():
 
 @pytest.fixture
 def mocks(mocker):
-    test_user = {
-        "context": {
-            "user": {
-                "policies": [
-                    "data_upload",
-                    "programs.test-read-storage",
-                    "programs.test-read",
-                ],
-                "google": {"proxy_group": None},
-                "is_admin": True,
-                "name": "example@uchicago.edu",
-                "projects": {
-                    "test": [
-                        "read-storage",
-                        "read",
-                        "create",
-                        "write-storage",
-                        "upload",
-                        "update",
-                        "delete",
-                    ]
-                },
-            }
-        },
-        "aud": ["data", "user", "fence", "openid"],
-        "sub": "18",
-    }
+    test_user = TEST_USER_DATA
     all_mocks = {}
 
     all_mocks["current_token"] = mocker.patch(
@@ -53,35 +58,31 @@ def mocks(mocker):
 
     all_mocks["_list_files_in_bucket"] = mocker.patch(
         "manifestservice.manifests._list_files_in_bucket",
-        return_value=(
-            {
-                "manifests": [
-                    {"filename": "manifest-a-b-c.json"},
-                ],
-                "cohorts": [{"filename": "18e32c12-a053-4ac5-90a5-f01f70b5c2be"}],
-                "metadata": [{"filename": "metadata-2024-04-26T18-59-21.226440.json"}],
-            },
-            True,
-        ),
+        return_value={
+            "manifests": [
+                {"filename": "manifest-a-b-c.json"},
+            ],
+            "cohorts": [{"filename": "18e32c12-a053-4ac5-90a5-f01f70b5c2be"}],
+            "metadata": [{"filename": "metadata-2024-04-26T18-59-21.226440.json"}],
+        },
     )
 
     all_mocks["_add_manifest_to_bucket"] = mocker.patch(
         "manifestservice.manifests._add_manifest_to_bucket",
-        return_value=("manifest-xxx.json", True),
+        return_value="manifest-xxx.json",
     )
 
     all_mocks["_get_file_contents"] = mocker.patch(
         "manifestservice.manifests._get_file_contents", return_value=""
     )
 
-    all_mocks["_add_GUID_to_bucket"] = mocker.patch(
-        "manifestservice.manifests._add_GUID_to_bucket",
-        return_value=("a-guid-value", True),
+    all_mocks["_add_guid_to_bucket"] = mocker.patch(
+        "manifestservice.manifests._add_guid_to_bucket", return_value="a-guid-value"
     )
 
     all_mocks["_add_metadata_to_bucket"] = mocker.patch(
         "manifestservice.manifests._add_metadata_to_bucket",
-        return_value=("manifest-xxx.json", True),
+        return_value="manifest-xxx.json",
     )
 
     return all_mocks
@@ -89,33 +90,7 @@ def mocks(mocker):
 
 @pytest.fixture
 def broken_s3_mocks(mocker):
-    test_user = {
-        "context": {
-            "user": {
-                "policies": [
-                    "data_upload",
-                    "programs.test-read-storage",
-                    "programs.test-read",
-                ],
-                "google": {"proxy_group": None},
-                "is_admin": True,
-                "name": "example@uchicago.edu",
-                "projects": {
-                    "test": [
-                        "read-storage",
-                        "read",
-                        "create",
-                        "write-storage",
-                        "upload",
-                        "update",
-                        "delete",
-                    ]
-                },
-            }
-        },
-        "aud": ["data", "user", "fence", "openid"],
-        "sub": "18",
-    }
+    test_user = TEST_USER_DATA
     all_mocks = {}
 
     all_mocks["current_token"] = mocker.patch(

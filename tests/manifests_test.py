@@ -1,5 +1,8 @@
+# pylint: disable=protected-access, unused-argument
+
 import json as json_utils
 import random
+
 from manifestservice import manifests
 
 
@@ -79,29 +82,33 @@ def test_is_valid_manifest():
     assert is_valid is True
 
 
-def test_POST_handles_invalid_json(client, mocks):
+def test_post_handles_invalid_json(client, mocks):
     """
     Test that we get a 400 if flask.request.json is not filled in.
     """
-    r = client.post("/", data={"a": 1}, headers={"Content-type": "application/json"})
-    assert r.status_code == 400
+
+    response = client.post(
+        "/", data={"a": 1}, headers={"Content-type": "application/json"}
+    )
+    assert response.status_code == 400
 
 
-def test_POST_handles_invalid_manifest_keys(client, mocks):
+def test_post_handles_invalid_manifest_keys(client, mocks):
     """
     Test that we get a 400 if the manifest is missing the required key -- object_id.
     """
+
     test_manifest = [{"foo": 44, "bar": 88}]
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.post("/", json=test_manifest, headers=headers)
-    assert r.status_code == 400
+    response = client.post("/", json=test_manifest, headers=headers)
+    assert response.status_code == 400
 
     test_manifest = [{"obj__id": 44, "subject_id": 88}]
-    r = client.post("/", json=test_manifest, headers=headers)
-    assert r.status_code == 400
+    response = client.post("/", json=test_manifest, headers=headers)
+    assert response.status_code == 400
 
 
-def test_POST_successful_manifest_upload(client, mocks):
+def test_post_successful_manifest_upload(client, mocks):
     """
     Test the full user pathway: a manifest is created, listed, and then downloaded.
     Unfortunately, we cannot verify here that the manifest is present in the listed files,
@@ -121,32 +128,32 @@ def test_POST_successful_manifest_upload(client, mocks):
     ]
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.post("/", data=json_utils.dumps(test_manifest), headers=headers)
+    response = client.post("/", data=json_utils.dumps(test_manifest), headers=headers)
 
-    assert r.status_code == 200
+    assert response.status_code == 200
     assert mocks["_authenticate_user"].call_count == 1
     assert mocks["_add_manifest_to_bucket"].call_count == 1
     assert mocks["_get_file_contents"].call_count == 0
 
-    json = r.json
+    json = response.json
     new_filename = json["filename"]
 
     assert new_filename is not None
-    assert type(new_filename) is str
+    assert isinstance(new_filename, str)
 
-    r = client.get("/", headers=headers)
-    assert r.status_code == 200
+    response = client.get("/", headers=headers)
+    assert response.status_code == 200
     assert mocks["_authenticate_user"].call_count == 2
     assert mocks["_add_manifest_to_bucket"].call_count == 1
     assert mocks["_list_files_in_bucket"].call_count == 1
     assert mocks["_get_file_contents"].call_count == 0
 
-    json = r.json
+    json = response.json
     manifest_files = json["manifests"]
-    assert type(manifest_files) is list
+    assert isinstance(manifest_files, list)
 
-    r = client.get("/file/" + new_filename, headers=headers)
-    assert r.status_code == 200
+    response = client.get("/file/" + new_filename, headers=headers)
+    assert response.status_code == 200
     assert mocks["_authenticate_user"].call_count == 3
     assert mocks["_add_manifest_to_bucket"].call_count == 1
     assert mocks["_list_files_in_bucket"].call_count == 1

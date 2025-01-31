@@ -5,8 +5,8 @@ helps with installation.
 More info on various arguments here:
 https://setuptools.readthedocs.io/en/latest/setuptools.html
 """
-from setuptools import setup, find_packages
 
+from setuptools import find_packages, setup
 
 setup(
     name="manifestservice",

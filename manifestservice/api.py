@@ -1,26 +1,27 @@
-import flask
+import json
 import logging
-import time
+import os
+
+import flask
 
 from .manifests import blueprint as manifests_bp
-import os
-import json
 
-TRUSTED_CONFIG_PATH_PREFIXES  = [
-    os.getcwd(),
-    "/var/gen3"
-]
+TRUSTED_CONFIG_PATH_PREFIXES = [os.getcwd(), "/var/gen3"]
+
 
 def validate_config_path(config_path):
+    """Get paths with trusted prefixes"""
     for trusted_path in TRUSTED_CONFIG_PATH_PREFIXES:
-        if os.path.commonpath((os.path.realpath(config_path), trusted_path)) == trusted_path:
+        if (
+            os.path.commonpath((os.path.realpath(config_path), trusted_path))
+            == trusted_path
+        ):
             return
-    raise ValueError(
-        "Illegal config file path provided as {}".format(config_path)
-    )
+    raise ValueError(f"Illegal config file path provided as {config_path}")
 
 
 def create_app():
+    """Create app"""
     app = flask.Flask(__name__)
     app.register_blueprint(manifests_bp, url_prefix="")
 
@@ -29,14 +30,12 @@ def create_app():
 
     try:
         validate_config_path(config_path)
-        with open(config_path) as f:
-            config_str = f.read()
+        with open(config_path) as config_file:
+            config_str = config_file.read()
             config_dict = json.loads(config_str)
-    except Exception as e:
-        print(e)
-        raise ValueError(
-            "Unable to parse the provided config file at {}".format(config_path)
-        )
+    except Exception as err:
+        print(err)
+        raise ValueError(f"Unable to parse the provided config file at {config_path}")
 
     for key in config_dict:
         app.config[key] = config_dict[key]
@@ -48,7 +47,7 @@ def create_app():
     # If prefix is set, user folders will be stored in a directory named PREFIX
     if "prefix" in config_dict and config_dict["prefix"] != "":
         app.config["PREFIX"] = config_dict["prefix"]
-    app.config["OIDC_ISSUER"] = "https://%s/user" % config_dict["hostname"]
+    app.config["OIDC_ISSUER"] = f"https://{config_dict['hostname']}/user"
     app.config["MANIFEST_BUCKET_NAME"] = config_dict["manifest_bucket_name"]
 
     required_config_variables = [
@@ -56,11 +55,12 @@ def create_app():
         "MANIFEST_BUCKET_NAME",
     ]
     if not set(required_config_variables).issubset(set(app.config.keys())):
+        missing_variables = set(required_config_variables).difference(
+            set(app.config.keys())
+        )
         raise ValueError(
-            "Not all required config variables were provided in {}. Missing: {}".format(
-                config_path,
-                str(set(required_config_variables).difference(set(app.config.keys()))),
-            )
+            f"Not all required config variables were provided in {config_path}."
+            + f" Missing: {str(missing_variables)}"
         )
 
     return app
@@ -86,6 +86,7 @@ def health_check():
 
 
 def run_for_development(**kwargs):
+    """Run the service locally"""
     app.logger.setLevel(logging.INFO)
 
     app.run(**kwargs)

@@ -1,6 +1,6 @@
 # Manifest Service
 
-### Overview
+## Overview
 This service handles reading from and writing to a user's s3 folder containing their manifests. A manifest is a JSON file that lists records a researcher may be interested in analyzing. This service stores a manifest to a user folder in an s3 bucket and delivers it for later use, such as when the researcher wants to mount the manifest in their workspace. If the "prefix" config variable is set, user folders will be stored in a directory of that name within the s3 bucket.
 
 Manifest files should contain JSON of the form
@@ -17,7 +17,7 @@ Manifest files should contain JSON of the form
       ...
     ]
 
-### Endpoints
+## Endpoints
 
 For all endpoints, the request must contain an Authorization header with an access_token. The user needs read access and read-storage access
 on at least one project in order to use this service.
@@ -69,22 +69,25 @@ On failure, the above endpoints all return JSON in the form
 
     { "error" : "error-message" }
 
-### OpenAPI spec
+## OpenAPI spec
 
-The [OpenAPI](https://github.com/OAI/OpenAPI-Specification)/[Swagger 2.0](https://swagger.io/) specification of a service is stored in its `swagger.yaml` and can be visualized [here](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/manifestservice/master/openapi/swagger.yaml).
+The [OpenAPI](https://github.com/OAI/OpenAPI-Specification)/[Swagger 2.0](https://swagger.io/)
+specification of a service is stored in its `swagger.yaml` and can be
+visualized [here](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/manifestservice/master/openapi/swagger.yaml).
 
-### Running the service locally
-If you want to run this service locally, fill out the config.json file with the correct values and then run:
+## Running the service locally
+If you want to run this service locally, fill out the config.json file
+with the correct values and then run:
 
     poetry shell
     poetry install
     python3 run.py
 
-And then GET and POST to http://localhost:5000/
+And then GET and POST to [http://localhost:5000/](http://localhost:5000/)
 
 You'll need AWS credentials in your environment to run this locally.
 
-### Quickstart with Helm
+## Quickstart with Helm
 
-You can now deploy individual services via Helm!
-Please refer to the Helm quickstart guide HERE (https://github.com/uc-cdis/manifestservice/blob/master/docs/quickstart_helm.md)
+You can now deploy individual services via Helm! Please refer to
+the [Helm quickstart guide](https://github.com/uc-cdis/manifestservice/blob/master/docs/quickstart_helm.md)
