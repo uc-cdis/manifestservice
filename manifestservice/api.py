@@ -55,9 +55,12 @@ def create_app():
         "MANIFEST_BUCKET_NAME",
     ]
     if not set(required_config_variables).issubset(set(app.config.keys())):
+        missing_variables = set(required_config_variables).difference(
+            set(app.config.keys())
+        )
         raise ValueError(
             f"Not all required config variables were provided in {config_path}."
-            + f" Missing: {str(set(required_config_variables).difference(set(app.config.keys())))}"
+            + f" Missing: {str(missing_variables)}"
         )
 
     return app
