@@ -501,6 +501,8 @@ def _list_files_in_bucket(bucket_name, folder):
     guids = []
     metadata = []
     bucket = s3.Bucket(bucket_name)
+    client = session.client('s3')
+    logger.error(client.meta.endpoint_url)
 
     try:
         bucket_objects = bucket.objects.filter(Prefix=folder + "/")
