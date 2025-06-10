@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "manifestservice"
-version = "0.5.3"
+version = "0.5.4"
 description = "Handles reading from and writing to a user's s3 folder containing their manifests"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -15,12 +15,12 @@ Flask = "^2.3.2"
 authutils = "<7"
 boto3 = "^1.17.48"
 cryptography = "^44.0.1"
-requests = ">=2.32.0"
+requests = "^2.32.4"
 gunicorn = ">=22.0.0"
 importlib-metadata = "^4.8.1"
 jinja2=">=3.1.6"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^6.2.3"
 pytest-mock = "^3.5.1"
 pytest-flask = "^1.2.0"
