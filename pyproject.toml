@@ -10,7 +10,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9.2, <4.0"
+python = "^3.13"
 Flask = "^2.3.2"
 authutils = "<7"
 boto3 = "^1.17.48"
