@@ -1,4 +1,4 @@
-ARG AZLINUX_BASE_VERSION=master
+ARG AZLINUX_BASE_VERSION=feat_py3.13_hardened
 
 # Base stage with python-build-base
 FROM quay.io/cdis/python-nginx-al:${AZLINUX_BASE_VERSION} AS base
@@ -12,20 +12,6 @@ RUN chown -R gen3:gen3 /${appname}
 # Builder stage
 FROM base AS builder
 
-# Install Python 3.13 from source as root
-USER root
-
-RUN yum install -y wget gcc make tar openssl-devel bzip2-devel libffi-devel zlib-devel && \
-    wget https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz && \
-    tar -xzf Python-3.13.0.tgz && \
-    cd Python-3.13.0 && \
-    ./configure --enable-optimizations && \
-    make altinstall && \
-    cd .. && \
-    rm -rf Python-3.13.0 Python-3.13.0.tgz && \
-    yum clean all
-
-# Switch back to gen3 user
 USER gen3
 
 COPY poetry.lock pyproject.toml /${appname}/
