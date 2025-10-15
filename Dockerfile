@@ -16,7 +16,8 @@ USER gen3
 
 COPY poetry.lock pyproject.toml /${appname}/
 
-RUN poetry install -vv --without dev --no-interaction
+RUN poetry config virtualenvs.create false && \
+    poetry install -vv --without dev --no-interaction
 
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
