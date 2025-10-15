@@ -16,6 +16,11 @@ USER gen3
 
 COPY poetry.lock pyproject.toml /${appname}/
 
+# Debug: check available Python versions
+RUN which -a python python3 python3.13 || true && \
+    ls -la /usr/bin/python* || true && \
+    ls -la /usr/local/bin/python* || true
+
 RUN poetry export -f requirements.txt --output requirements.txt --without dev --without-hashes && \
     python3.13 -m pip install --no-cache-dir -r requirements.txt
 
