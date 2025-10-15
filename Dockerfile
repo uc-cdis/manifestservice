@@ -16,9 +16,7 @@ USER gen3
 
 COPY poetry.lock pyproject.toml /${appname}/
 
-# Configure poetry to use Python 3.13 and install dependencies
-RUN poetry env use python3.13 && \
-    poetry install -vv --without dev --no-interaction
+RUN poetry install -vv --without dev --no-interaction
 
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
