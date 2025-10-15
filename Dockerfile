@@ -14,18 +14,16 @@ FROM base AS builder
 
 USER gen3
 
-ENV POETRY_VIRTUALENVS_CREATE=false \
-    POETRY_VIRTUALENVS_IN_PROJECT=false
-
 COPY poetry.lock pyproject.toml /${appname}/
 
-RUN poetry install -vv --without dev --no-interaction
+RUN poetry export -f requirements.txt --output requirements.txt --without dev --without-hashes && \
+    pip3 install --no-cache-dir -r requirements.txt
 
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
 
-# Run poetry again so this app itself gets installed too
-RUN poetry install --without dev --no-interaction
+# Install the manifestservice package itself
+RUN pip3 install --no-cache-dir -e .
 
 RUN git config --global --add safe.directory /${appname} && COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" > /${appname}/version_data.py \
     && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >> /${appname}/version_data.py
