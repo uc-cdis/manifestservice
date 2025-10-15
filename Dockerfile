@@ -14,10 +14,12 @@ FROM base AS builder
 
 USER gen3
 
+ENV POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_VIRTUALENVS_IN_PROJECT=false
+
 COPY poetry.lock pyproject.toml /${appname}/
 
-RUN poetry config virtualenvs.create false && \
-    poetry install -vv --without dev --no-interaction
+RUN poetry install -vv --without dev --no-interaction
 
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
