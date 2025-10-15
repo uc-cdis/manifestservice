@@ -17,13 +17,13 @@ USER gen3
 COPY poetry.lock pyproject.toml /${appname}/
 
 RUN poetry export -f requirements.txt --output requirements.txt --without dev --without-hashes && \
-    pip3 install --no-cache-dir -r requirements.txt
+    python3.13 -m pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
 
 # Install the manifestservice package itself
-RUN pip3 install --no-cache-dir -e .
+RUN python3.13 -m pip install --no-cache-dir -e .
 
 RUN git config --global --add safe.directory /${appname} && COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" > /${appname}/version_data.py \
     && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >> /${appname}/version_data.py
