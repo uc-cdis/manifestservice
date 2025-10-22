@@ -69,14 +69,14 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 
 [[package]]
 name = "authlib"
-version = "1.6.0"
+version = "1.6.5"
 description = "The ultimate Python library in building OAuth and OpenID Connect servers and clients."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "authlib-1.6.0-py2.py3-none-any.whl", hash = "sha256:91685589498f79e8655e8a8947431ad6288831d643f11c55c2143ffcc738048d"},
-    {file = "authlib-1.6.0.tar.gz", hash = "sha256:4367d32031b7af175ad3a323d571dc7257b7099d55978087ceae4a0d88cd3210"},
+    {file = "authlib-1.6.5-py2.py3-none-any.whl", hash = "sha256:3e0e0507807f842b02175507bdee8957a1d5707fd4afb17c32fb43fee90b6e3a"},
+    {file = "authlib-1.6.5.tar.gz", hash = "sha256:6aaf9c79b7cc96c900f0b284061691c5d4e61221640a948fe690b556a6d6d10b"},
 ]
 
 [package.dependencies]
@@ -84,28 +84,32 @@ cryptography = "*"
 
 [[package]]
 name = "authutils"
-version = "6.2.7"
+version = "7.0.0"
 description = "Gen3 auth utility functions"
 optional = false
-python-versions = "<4.0,>=3.9.2"
+python-versions = ">=3.9.2, <4.0"
 groups = ["main"]
-files = [
-    {file = "authutils-6.2.7-py3-none-any.whl", hash = "sha256:4f50990b841af56afe3a79a897df269a072035b89440dc27a80451c095cc2005"},
-    {file = "authutils-6.2.7.tar.gz", hash = "sha256:768ebf5f1f776e1a78ffe43f730f6fe01e1b5441e7ec9c8f99997284286dac5e"},
-]
+files = []
+develop = false
 
 [package.dependencies]
-authlib = ">=1.1.0"
-cached-property = ">=1.4,<2.0"
+authlib = ">=1.6.4"
+cached-property = "~=1.4"
 cdiserrors = "<2.0.0"
-cryptography = ">=44.0.1,<45.0.0"
+cryptography = "^44.0.1"
 httpx = ">=0.23.0,<1.0.0"
 pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
-xmltodict = ">=0.9,<1.0"
+xmltodict = "~=0.9"
 
 [package.extras]
 fastapi = ["fastapi (>=0.65.2,<0.66.0)"]
 flask = ["Flask (<=2.3.3)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/uc-cdis/authutils.git"
+reference = "chore/bump-authlib"
+resolved_reference = "5e1e4c0637370f9bfa32071d0ce3be0173fd34d1"
 
 [[package]]
 name = "blinker"
@@ -1461,4 +1465,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9.2, <4.0"
-content-hash = "46aa5c0f3e4b28f8cbfa2b7367ee9a94e2fc365758f3b67ad3e8270015c21778"
+content-hash = "eb2c6a0c9168eae845a9401fefc8a4468611e09db5ceec54f607ab6feb3d895e"
