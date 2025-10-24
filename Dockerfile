@@ -39,11 +39,20 @@ FROM quay.io/cdis/python-build-base:${PYTHON_VERSION} AS final
 
 ENV appname=manifestservice
 
+# Install nginx and Poetry (needed by dockerrun.bash)
+RUN yum install -y nginx && yum clean all && \
+    python3 -m pip install --no-cache-dir poetry && \
+    poetry config virtualenvs.create false
+
 # Create gen3 user and group with home directory
 RUN groupadd -r gen3 && useradd -r -g gen3 -m -d /home/gen3 gen3
 
 WORKDIR /${appname}
 
+# Copy the installed Python packages from builder
+COPY --from=builder /venv /venv
+
+# Copy the application from builder
 COPY --from=builder /${appname} /${appname}
 
 RUN chown -R gen3:gen3 /${appname}
