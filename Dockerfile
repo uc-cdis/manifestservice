@@ -45,7 +45,11 @@ RUN yum install -y nginx && yum clean all && \
     poetry config virtualenvs.create false
 
 # Create gen3 user and group with home directory
-RUN groupadd -r gen3 && useradd -r -g gen3 -m -d /home/gen3 gen3
+RUN groupadd -r gen3 && useradd -r -g gen3 -m -d /home/gen3 gen3 && \
+    # Give gen3 user permissions for nginx directories
+    mkdir -p /var/log/nginx /var/lib/nginx /run && \
+    chown -R gen3:gen3 /var/log/nginx /var/lib/nginx /run && \
+    chmod -R 755 /var/log/nginx /var/lib/nginx /run
 
 WORKDIR /${appname}
 
