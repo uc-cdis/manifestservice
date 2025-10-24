@@ -61,7 +61,7 @@ COPY --from=builder /${appname} /${appname}
 
 RUN chown -R gen3:gen3 /${appname}
 
-# Switch to non-root user 'gen3' for the serving process
-USER gen3
-
+# Note: Starting as root to allow nginx to bind to port 80
+# Nginx will run worker processes as the configured user
+# The application can switch to gen3 user in dockerrun.bash if needed
 CMD ["/bin/bash", "-c", "/manifestservice/dockerrun.bash"]
