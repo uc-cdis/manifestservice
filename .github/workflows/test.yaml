@@ -22,5 +22,5 @@ jobs:
     uses: uc-cdis/.github/.github/workflows/python_unit_test.yaml@master
     with:
       setup-script: 'tests/ci_setup.sh'
-      python-version: '3.9'
+      python-version: '3.13'
       use-cache: true
