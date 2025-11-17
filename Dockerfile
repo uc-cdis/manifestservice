@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=feat_python3.13-alias
+ARG PYTHON_VERSION=master
 
 FROM quay.io/cdis/python-build-base:${PYTHON_VERSION} AS builder
 
