@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION=master
 
-FROM quay.io/cdis/python-build-base:${PYTHON_VERSION} AS builder
+FROM quay.io/cdis/python-nginx-al:${PYTHON_VERSION} AS builder
 
 ENV appname=manifestservice
 
