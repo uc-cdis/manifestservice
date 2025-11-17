@@ -1,6 +1,4 @@
-ARG PYTHON_VERSION=feat_python3.13-alias
-
-FROM quay.io/cdis/python-build-base:${PYTHON_VERSION} AS builder
+FROM quay.io/cdis/amazonlinux-base:3.13-pythonbase AS builder
 
 ENV appname=manifestservice
 
