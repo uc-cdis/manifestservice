@@ -28,6 +28,10 @@ WORKDIR /${appname}
 
 COPY --from=builder /${appname} /${appname}
 
+# Set PATH to use project-local venv and unset conflicting VIRTUAL_ENV
+ENV PATH="/manifestservice/.venv/bin:$PATH" \
+    VIRTUAL_ENV=""
+
 USER gen3
 
 CMD ["/manifestservice/dockerrun.bash"]
