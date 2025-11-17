@@ -4,12 +4,14 @@ ENV appname=manifestservice
 
 WORKDIR /${appname}
 
-COPY poetry.lock pyproject.toml /${appname}/
+USER gen3
+
+COPY --chown=gen3:gen3 poetry.lock pyproject.toml /${appname}/
 
 RUN poetry install -vv --no-interaction --without dev
 
-COPY . /${appname}
-COPY ./deployment/wsgi/wsgi.py /${appname}wsgi.py
+COPY --chown=gen3:gen3 . /${appname}
+COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
 
 RUN poetry install -vv --no-interaction --without dev
 
@@ -22,8 +24,6 @@ ENV appname=manifestservice
 WORKDIR /${appname}
 
 COPY --from=builder /${appname} /${appname}
-
-RUN chown -R gen3:gen3 /${appname}
 
 USER gen3
 
