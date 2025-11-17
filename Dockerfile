@@ -6,6 +6,8 @@ ENV appname=manifestservice
 
 WORKDIR /${appname}
 
+RUN python3 -m pip install --no-cache-dir poetry
+
 COPY poetry.lock pyproject.toml /${appname}/
 
 RUN poetry install --without dev --no-interaction --no-root
