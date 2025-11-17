@@ -8,16 +8,17 @@ USER gen3
 
 COPY --chown=gen3:gen3 poetry.lock pyproject.toml /${appname}/
 
-# Force Poetry to create a new venv in the project directory
-RUN poetry config virtualenvs.in-project true --local && \
+# Unset VIRTUAL_ENV to force Poetry to create a new project-local venv
+RUN unset VIRTUAL_ENV && \
+    poetry config virtualenvs.in-project true --local && \
     poetry install -vv --no-interaction --without dev
 
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
 
-RUN poetry install -vv --no-interaction --without dev
+RUN unset VIRTUAL_ENV && poetry install -vv --no-interaction --without dev
 
-ENV PATH="$(poetry env info --path)/bin:$PATH"
+ENV PATH="/manifestservice/.venv/bin:$PATH"
 
 FROM quay.io/cdis/amazonlinux-base:3.13-pythonnginx AS final
 
