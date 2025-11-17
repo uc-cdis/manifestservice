@@ -6,17 +6,16 @@ ENV appname=manifestservice
 
 WORKDIR /${appname}
 
-RUN python3 -m pip install --no-cache-dir poetry && \
-    poetry env use /venv/bin/python
-
 COPY poetry.lock pyproject.toml /${appname}/
 
-RUN poetry install --without dev --no-interaction --no-root
+RUN poetry install -vv --no-interaction --without dev
 
 COPY . /${appname}
 COPY ./deployment/wsgi/wsgi.py /${appname}wsgi.py
 
-RUN poetry install --without dev --no-interaction
+RUN poetry install -vv --no-interaction --without dev
+
+ENV PATH="$(poetry env info --path)/bin:$PATH"
 
 FROM quay.io/cdis/python-nginx-al:${PYTHON_VERSION} AS final
 
@@ -24,7 +23,6 @@ ENV appname=manifestservice
 
 WORKDIR /${appname}
 
-COPY --from=builder /venv /venv
 COPY --from=builder /${appname} /${appname}
 
 RUN chown -R gen3:gen3 /${appname}
