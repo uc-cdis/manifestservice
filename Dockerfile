@@ -1,6 +1,4 @@
-ARG PYTHON_VERSION=master
-
-FROM quay.io/cdis/python-nginx-al:${PYTHON_VERSION} AS builder
+FROM quay.io/cdis/amazonlinux-base:3.13-pythonnginx AS builder
 
 ENV appname=manifestservice
 
@@ -17,7 +15,7 @@ RUN poetry install -vv --no-interaction --without dev
 
 ENV PATH="$(poetry env info --path)/bin:$PATH"
 
-FROM quay.io/cdis/python-nginx-al:${PYTHON_VERSION} AS final
+FROM quay.io/cdis/amazonlinux-base:3.13-pythonnginx AS final
 
 ENV appname=manifestservice
 
