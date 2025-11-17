@@ -33,7 +33,7 @@ RUN git config --global --add safe.directory /${appname} && COMMIT=`git rev-pars
     && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >> /${appname}/version_data.py
 
 # Final stage - also use python-build-base since python-nginx-al doesn't have Python 3.13
-FROM quay.io/cdis/python-build-base:${PYTHON_VERSION} AS final
+FROM quay.io/cdis/amazonlinux-base:3.13-pythonbase AS final
 
 ENV appname=manifestservice
 
