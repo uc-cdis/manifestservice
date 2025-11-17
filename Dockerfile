@@ -10,7 +10,8 @@ RUN python3 -m pip install --no-cache-dir poetry
 
 COPY poetry.lock pyproject.toml /${appname}/
 
-RUN poetry install --without dev --no-interaction --no-root
+RUN poetry env use /venv/bin/python && \
+    poetry install --without dev --no-interaction --no-root
 
 COPY . /${appname}
 COPY ./deployment/wsgi/wsgi.py /${appname}wsgi.py
