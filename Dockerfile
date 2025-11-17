@@ -1,38 +1,37 @@
-ARG AZLINUX_BASE_VERSION=master
-
-# Base stage with python-build-base
-FROM quay.io/cdis/python-nginx-al:${AZLINUX_BASE_VERSION} AS base
+FROM quay.io/cdis/amazonlinux-base:3.13-pythonnginx AS builder
 
 ENV appname=manifestservice
 
 WORKDIR /${appname}
 
-RUN chown -R gen3:gen3 /${appname}
-
-# Builder stage
-FROM base AS builder
-
 USER gen3
 
-COPY poetry.lock pyproject.toml /${appname}/
+COPY --chown=gen3:gen3 poetry.lock pyproject.toml /${appname}/
 
-RUN poetry install -vv --without dev --no-interaction
+# Unset VIRTUAL_ENV to force Poetry to create a new project-local venv
+RUN unset VIRTUAL_ENV && \
+    poetry config virtualenvs.in-project true --local && \
+    poetry install -vv --no-interaction --without dev
 
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}wsgi.py
 
-# Run poetry again so this app itself gets installed too
-RUN poetry install --without dev --no-interaction
+RUN unset VIRTUAL_ENV && poetry install -vv --no-interaction --without dev
 
-RUN git config --global --add safe.directory /${appname} && COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" > /${appname}/version_data.py \
-    && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >> /${appname}/version_data.py
+ENV PATH="/manifestservice/.venv/bin:$PATH"
 
-# Final stage
-FROM base
+FROM quay.io/cdis/amazonlinux-base:3.13-pythonnginx AS final
+
+ENV appname=manifestservice
+
+WORKDIR /${appname}
 
 COPY --from=builder /${appname} /${appname}
 
-# Switch to non-root user 'gen3' for the serving process
+# Set PATH to use project-local venv and unset conflicting VIRTUAL_ENV
+ENV PATH="/manifestservice/.venv/bin:$PATH" \
+    VIRTUAL_ENV=""
+
 USER gen3
 
-CMD ["/bin/bash", "-c", "/manifestservice/dockerrun.bash"]
+CMD ["/manifestservice/dockerrun.bash"]
