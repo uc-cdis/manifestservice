@@ -4,8 +4,6 @@ ENV appname=manifestservice
 
 WORKDIR /${appname}
 
-USER gen3
-
 COPY --chown=gen3:gen3 poetry.lock pyproject.toml /${appname}/
 
 # Unset VIRTUAL_ENV to force Poetry to create a new project-local venv
@@ -25,6 +23,11 @@ FROM quay.io/cdis/amazonlinux-base:3.13-pythonnginx AS final
 ENV appname=manifestservice
 
 WORKDIR /${appname}
+
+USER root
+RUN dnf install -y nginx && \
+    ln -sf /usr/sbin/nginx /usr/bin/nginx && \
+    rm -rf /var/cache/dnf
 
 COPY --from=builder /${appname} /${appname}
 
