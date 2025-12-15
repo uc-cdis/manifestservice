@@ -14,32 +14,24 @@ FROM base AS builder
 
 USER gen3
 
-# Unset base image's VIRTUAL_ENV and configure poetry to create venv in project directory
-ENV VIRTUAL_ENV=
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
-ENV POETRY_VIRTUALENVS_CREATE=true
-
-# copy ONLY poetry artifact, install the dependencies but not the app
-# this will make sure that the dependencies are cached
 COPY poetry.lock pyproject.toml /${appname}/
-RUN poetry install -vv --no-root --only main --no-interaction
 
-# Move app files into working directory
+RUN poetry install -vv --without dev --no-interaction
+
 COPY --chown=gen3:gen3 . /${appname}
 COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /${appname}/wsgi.py
 
-# install the app
+# Run poetry again so this app itself gets installed too
 RUN poetry install --without dev --no-interaction
 
 # Final stage
-
 FROM base
 
-ENV appname=manifestservice
-ENV PATH="/${appname}/.venv/bin:/usr/sbin:${PATH}"
+ENV PATH="/usr/sbin:${PATH}"
 
 COPY --from=builder /${appname} /${appname}
+COPY --from=builder /venv /venv
 
 USER gen3
 
-CMD ["/manifestservice/dockerrun.bash"]
+CMD ["/bin/bash", "-c", "/manifestservice/dockerrun.bash"]
