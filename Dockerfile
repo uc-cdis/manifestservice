@@ -27,8 +27,6 @@ RUN poetry install --without dev --no-interaction
 # Final stage
 FROM base
 
-ENV PATH="/usr/sbin:${PATH}"
-
 COPY --from=builder /${appname} /${appname}
 COPY --from=builder /venv /venv
 
