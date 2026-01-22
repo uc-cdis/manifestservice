@@ -1,4 +1,3 @@
-# manifestservice/config.py
 """
 Pydantic Settings configuration for Manifest Service.
 
