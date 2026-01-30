@@ -2,27 +2,9 @@
 FastAPI dependencies for auth and config injection.
 
 NOTE - Flask -> FastAPI migration notes:
-- Use FastAPI Depends() Instead of _authenticate_user()
+- Use FastAPI Depends() to inject auth claims instead of _authenticate_user()
 - Use authutils.token.fastapi.access_token() instead of authutils.token.validate (flask)
-- User folder name function put here for now
-
-Flask way:
-    @blueprint.route("/")
-    def get_manifests():
-        err, code = _authenticate_user()
-        if err is not None:
-            return err, code
-        folder = _get_folder_name_from_token(current_token)  # Global proxy
-        ...
-
-FastAPI way:
-    @router.get("/")
-    def get_manifests(
-        claims: CurrentUserClaims,
-        settings: SettingsDep,
-    ):
-        folder = get_user_folder_name(claims, settings)
-        ...
+- User folder name function moved here
 """
 
 from typing import Annotated

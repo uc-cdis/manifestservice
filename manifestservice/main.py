@@ -21,6 +21,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from .config import get_settings, clear_settings_cache
+from .routers import manifests_router
 
 logger = get_logger("manifestservice_logger", log_level="info")
 
@@ -61,9 +62,7 @@ def create_app() -> FastAPI:
     )
 
     # Register routers
-    # NOTE: Router registration to be added
-    # from .routers import manifests
-    # app.include_router(manifests.router)
+    app.include_router(manifests_router)
 
     @app.get("/_status", tags=["system"])
     def health_check() -> dict:
