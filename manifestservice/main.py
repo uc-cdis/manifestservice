@@ -9,6 +9,7 @@ NOTE - Flask -> FastAPI migration notes:
 - Uses uvicorn for run_for_development
 - Uses /docs for Swagger UI (FastAPI default), replaces flasgger
 - OpenAPI schema auto-generated from route definitions and Pydantic models
+- Custom exception handlers registered for S3 errors and generic exceptions
 """
 
 import logging
@@ -21,6 +22,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from .config import get_settings, clear_settings_cache
+from .errors import register_error_handlers
 from .routers import manifests_router
 
 logger = get_logger("manifestservice_logger", log_level="info")
@@ -61,7 +63,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Register routers
+    register_error_handlers(app)
+
     app.include_router(manifests_router)
 
     @app.get("/_status", tags=["system"])
