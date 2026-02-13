@@ -12,7 +12,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.13,<4.0"
 Flask = ">=2.3.2"
-authutils = ">=7.1.1"
+authutils = ">=7.2.2"
 boto3 = ">=1.41.3"
 gunicorn = ">=22.0.0"
 cdiserrors = ">=1.0.0"
