@@ -1,5 +1,18 @@
+"""
+Tests for metadata export routes and filename generation.
+
+NOTE - Flask -> FastAPI migration notes:
+- r.json (property) -> r.json() (method) - FastAPI TestClient
+- Error response key changed from "error" to "detail"
+- Removed _authenticate_user mock assertions (auth via dependency injection)
+"""
+
 import json as json_utils
-from manifestservice import manifests
+
+from manifestservice.services.s3 import (
+    _generate_unique_filename_with_timestamp_and_increment,
+)
+
 
 def test_generate_unique_metadata_filename_basic_date_generation():
     """
@@ -8,14 +21,15 @@ def test_generate_unique_metadata_filename_basic_date_generation():
     """
     timestamp = "a-b-c"
     users_existing_metadata_files = []
-    filename = manifests._generate_unique_filename_with_timestamp_and_increment(
+    filename = _generate_unique_filename_with_timestamp_and_increment(
         timestamp, users_existing_metadata_files, file_type="metadata"
     )
     assert filename == "metadata-a-b-c.json"
 
+
 def test_POST_successful_metadata_add(client, mocks):
     """
-        Test the Export metadata to Workspace pathway: a metadata file is added to the bucket.
+    Test the Export metadata to Workspace pathway: a metadata file is added to the bucket.
     Note that because s3 is being mocked, only an integration test can properly
     verify file creation.
     """
@@ -29,37 +43,34 @@ def test_POST_successful_metadata_add(client, mocks):
     post_body = test_metadata_contents
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.post("/metadata", data=json_utils.dumps(post_body), headers=headers)
+    r = client.post("/metadata", content=json_utils.dumps(post_body), headers=headers)
 
     assert r.status_code == 200
-    assert mocks["_authenticate_user"].call_count == 1
-    assert mocks["_get_file_contents"].call_count == 0
-    assert mocks["_add_metadata_to_bucket"].call_count == 1
-    assert mocks["_add_GUID_to_bucket"].call_count == 0
+    assert mocks["get_file_contents"].call_count == 0
+    assert mocks["add_metadata_to_bucket"].call_count == 1
+    assert mocks["add_guid_to_bucket"].call_count == 0
 
-    json = r.json
-    returned_filename = json["filename"]
+    json_response = r.json()
+    returned_filename = json_response["filename"]
 
     assert returned_filename is not None
     assert type(returned_filename) is str
 
     r = client.get("/metadata", headers=headers)
     assert r.status_code == 200
-    assert mocks["_authenticate_user"].call_count == 2
-    assert mocks["_add_metadata_to_bucket"].call_count == 1
-    assert mocks["_list_files_in_bucket"].call_count == 1
-    assert mocks["_get_file_contents"].call_count == 0
+    assert mocks["add_metadata_to_bucket"].call_count == 1
+    assert mocks["list_files_in_bucket"].call_count == 1
+    assert mocks["get_file_contents"].call_count == 0
 
-    json = r.json
-    metadata_files = json["external_file_metadata"]
+    json_response = r.json()
+    metadata_files = json_response["external_file_metadata"]
     assert type(metadata_files) is list
 
     r = client.get("/metadata/" + returned_filename, headers=headers)
     assert r.status_code == 200
-    assert mocks["_authenticate_user"].call_count == 3
-    assert mocks["_add_metadata_to_bucket"].call_count == 1
-    assert mocks["_list_files_in_bucket"].call_count == 1
-    assert mocks["_get_file_contents"].call_count == 1
+    assert mocks["add_metadata_to_bucket"].call_count == 1
+    assert mocks["list_files_in_bucket"].call_count == 1
+    assert mocks["get_file_contents"].call_count == 1
 
 
 def test_GET_metadata(client, mocks):
@@ -70,13 +81,12 @@ def test_GET_metadata(client, mocks):
     r = client.get("/metadata", headers=headers)
 
     assert r.status_code == 200
-    assert mocks["_authenticate_user"].call_count == 1
-    assert mocks["_get_file_contents"].call_count == 0
-    assert mocks["_add_metadata_to_bucket"].call_count == 0
-    assert mocks["_list_files_in_bucket"].call_count == 1
+    assert mocks["get_file_contents"].call_count == 0
+    assert mocks["add_metadata_to_bucket"].call_count == 0
+    assert mocks["list_files_in_bucket"].call_count == 1
 
-    json = r.json
-    metadata_returned = json["external_file_metadata"]
+    json_response = r.json()
+    metadata_returned = json_response["external_file_metadata"]
     assert len(metadata_returned) == 1
     # From the s3 mock
     assert (
@@ -92,8 +102,7 @@ def test_GET_metadata_broken_s3(client, broken_s3_mocks):
     r = client.get("/metadata", headers=headers)
 
     assert r.status_code == 500
-    assert broken_s3_mocks["_authenticate_user"].call_count == 1
 
-    response = r.json
+    response = r.json()
     assert len(response.keys()) == 1
-    assert response["error"] == "Currently unable to connect to s3."
+    assert response["detail"] == "Currently unable to connect to S3."

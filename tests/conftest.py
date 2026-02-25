@@ -1,58 +1,96 @@
-import boto3
+"""
+Fixtures for Manifest Service tests.
+"""
+
 from datetime import datetime
 import pytest
 from unittest.mock import MagicMock, patch
 
-from manifestservice.api import create_app
+from fastapi.testclient import TestClient
+
+from manifestservice.main import create_app
+from manifestservice.config import Settings, get_settings, clear_settings_cache
+from manifestservice.dependencies import _validate_and_get_claims
+
+
+TEST_USER_CLAIMS = {
+    "context": {
+        "user": {
+            "policies": [
+                "data_upload",
+                "programs.test-read-storage",
+                "programs.test-read",
+            ],
+            "google": {"proxy_group": None},
+            "is_admin": True,
+            "name": "example@uchicago.edu",
+            "projects": {
+                "test": [
+                    "read-storage",
+                    "read",
+                    "create",
+                    "write-storage",
+                    "upload",
+                    "update",
+                    "delete",
+                ]
+            },
+        }
+    },
+    "aud": ["data", "user", "fence", "openid"],
+    "sub": "18",
+}
+
+
+def test_claims():
+    """
+    Test JWT claims
+    """
+    return TEST_USER_CLAIMS
+
+
+def test_settings():
+    """
+    Test settings to run without needing config.json in the test env.
+    """
+    return Settings(
+        manifest_bucket_name="test-bucket",
+        hostname="test.example.com",
+        prefix="",
+        oidc_issuer="https://test.example.com/user",
+    )
 
 
 @pytest.fixture
-def app():
+def client():
+    """
+    FastAPI test client.
+    """
+    clear_settings_cache()
     app = create_app()
-    return app
+
+    # dependency ovverides
+    # https://fastapi.tiangolo.com/advanced/testing-dependencies/#use-the-app-dependency-overrides-attribute
+    app.dependency_overrides[get_settings] = test_settings
+    app.dependency_overrides[_validate_and_get_claims] = test_claims
+
+    with TestClient(app) as c:
+        yield c
+
+    # Cleanup
+    app.dependency_overrides.clear()
+    clear_settings_cache()
 
 
 @pytest.fixture
 def mocks(mocker):
-    test_user = {
-        "context": {
-            "user": {
-                "policies": [
-                    "data_upload",
-                    "programs.test-read-storage",
-                    "programs.test-read",
-                ],
-                "google": {"proxy_group": None},
-                "is_admin": True,
-                "name": "example@uchicago.edu",
-                "projects": {
-                    "test": [
-                        "read-storage",
-                        "read",
-                        "create",
-                        "write-storage",
-                        "upload",
-                        "update",
-                        "delete",
-                    ]
-                },
-            }
-        },
-        "aud": ["data", "user", "fence", "openid"],
-        "sub": "18",
-    }
+    """
+    Mock S3 functions.
+    """
     all_mocks = {}
 
-    all_mocks["current_token"] = mocker.patch(
-        "manifestservice.manifests.current_token", return_value=test_user
-    )
-
-    all_mocks["_authenticate_user"] = mocker.patch(
-        "manifestservice.manifests._authenticate_user", return_value=(None, 200)
-    )
-
-    all_mocks["_list_files_in_bucket"] = mocker.patch(
-        "manifestservice.manifests._list_files_in_bucket",
+    all_mocks["list_files_in_bucket"] = mocker.patch(
+        "manifestservice.routers.manifests.list_files_in_bucket",
         return_value=(
             {
                 "manifests": [
@@ -65,22 +103,22 @@ def mocks(mocker):
         ),
     )
 
-    all_mocks["_add_manifest_to_bucket"] = mocker.patch(
-        "manifestservice.manifests._add_manifest_to_bucket",
+    all_mocks["add_manifest_to_bucket"] = mocker.patch(
+        "manifestservice.routers.manifests.add_manifest_to_bucket",
         return_value=("manifest-xxx.json", True),
     )
 
-    all_mocks["_get_file_contents"] = mocker.patch(
-        "manifestservice.manifests._get_file_contents", return_value=""
+    all_mocks["get_file_contents"] = mocker.patch(
+        "manifestservice.routers.manifests.get_file_contents", return_value=""
     )
 
-    all_mocks["_add_GUID_to_bucket"] = mocker.patch(
-        "manifestservice.manifests._add_GUID_to_bucket",
+    all_mocks["add_guid_to_bucket"] = mocker.patch(
+        "manifestservice.routers.manifests.add_guid_to_bucket",
         return_value=("a-guid-value", True),
     )
 
-    all_mocks["_add_metadata_to_bucket"] = mocker.patch(
-        "manifestservice.manifests._add_metadata_to_bucket",
+    all_mocks["add_metadata_to_bucket"] = mocker.patch(
+        "manifestservice.routers.manifests.add_metadata_to_bucket",
         return_value=("manifest-xxx.json", True),
     )
 
@@ -89,47 +127,18 @@ def mocks(mocker):
 
 @pytest.fixture
 def broken_s3_mocks(mocker):
-    test_user = {
-        "context": {
-            "user": {
-                "policies": [
-                    "data_upload",
-                    "programs.test-read-storage",
-                    "programs.test-read",
-                ],
-                "google": {"proxy_group": None},
-                "is_admin": True,
-                "name": "example@uchicago.edu",
-                "projects": {
-                    "test": [
-                        "read-storage",
-                        "read",
-                        "create",
-                        "write-storage",
-                        "upload",
-                        "update",
-                        "delete",
-                    ]
-                },
-            }
-        },
-        "aud": ["data", "user", "fence", "openid"],
-        "sub": "18",
-    }
+    """
+    Mock S3 connection failure for error handling tests.
+
+    Migration note:
+    - Mock the S3 functions to return (None, False) to simulate connection failure
+    - Old way mocked boto3.Session
+    """
     all_mocks = {}
 
-    all_mocks["current_token"] = mocker.patch(
-        "manifestservice.manifests.current_token", return_value=test_user
-    )
-
-    all_mocks["_authenticate_user"] = mocker.patch(
-        "manifestservice.manifests._authenticate_user", return_value=(None, 200)
-    )
-
-    broken_s3_connection = boto3.Session("a", "b", "c")
-
-    all_mocks["boto3"] = mocker.patch(
-        "manifestservice.manifests.boto3.Session", return_value=broken_s3_connection
+    all_mocks["list_files_in_bucket"] = mocker.patch(
+        "manifestservice.routers.manifests.list_files_in_bucket",
+        return_value=(None, False),
     )
 
     return all_mocks
@@ -137,6 +146,13 @@ def broken_s3_mocks(mocker):
 
 @pytest.fixture
 def mocked_bucket():
+    """
+    Mock S3 bucket iteration for testing list_files_in_bucket directly.
+
+    This fixture mocks at the boto3 level for testing the actual S3 service
+    functions.
+    """
+
     class MockedS3Object:
         def __init__(self, key):
             self.key = key

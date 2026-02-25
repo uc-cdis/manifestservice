@@ -91,7 +91,6 @@ class Settings(BaseSettings):
         if hostname := values.get("hostname"):
             values["oidc_issuer"] = f"https://{hostname}/user"
 
-        # Check required config variables exist and are not None
         required_config_variables = ["hostname", "manifest_bucket_name"]
         provided_keys = set(values.keys())
         missing = set(required_config_variables) - provided_keys
