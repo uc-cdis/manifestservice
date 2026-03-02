@@ -1,29 +1,39 @@
-import collections
+"""
+Generate OpenAPI schema from FastAPI app.
+
+NOTE - Flask -> FastAPI migration notes:
+- Flask used Flasgger
+- FastAPI auto-generates OpenAPI schema from route definitions and Pydantic models
+
+Usage:
+    python build_openapi.py
+
+Outputs:
+    - openapi/openapi.json
+    - openapi/swagger.yaml
+"""
+
+import json
 
 import yaml
-from flasgger import Swagger, Flasgger
-from yaml.representer import Representer
 
-from manifestservice.api import app
-from openapi.app_info import app_info
+from manifestservice.main import app
 
 
-def write_swagger():
+def generate_openapi():
     """
-    Generate the Swagger documentation and store it in a file.
+    Generate and save OpenAPI schema from FastAPI app.
     """
-    yaml.add_representer(collections.defaultdict, Representer.represent_dict)
-    outfile = "openapi/swagger.yaml"
-    with open(outfile, "w") as f:
-        data = Flasgger.get_apispecs(swagger)
-        yaml.dump(data, f, default_flow_style=False)
-        print("Generated docs")
+    openapi_schema = app.openapi()
+
+    with open("openapi/openapi.json", "w") as f:
+        json.dump(openapi_schema, f, indent=2)
+    print("Generated openapi/openapi.json")
+
+    with open("openapi/swagger.yaml", "w") as f:
+        yaml.dump(openapi_schema, f, default_flow_style=False, sort_keys=False)
+    print("Generated openapi/swagger.yaml")
 
 
 if __name__ == "__main__":
-    try:
-        with app.app_context():
-            swagger = Swagger(app, template=app_info)
-            write_swagger()
-    except Exception as e:
-        print("Could not generate docs: {}".format(e))
+    generate_openapi()
