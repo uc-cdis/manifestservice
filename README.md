@@ -1,90 +1,105 @@
 # Manifest Service
 
-### Overview
-This service handles reading from and writing to a user's s3 folder containing their manifests. A manifest is a JSON file that lists records a researcher may be interested in analyzing. This service stores a manifest to a user folder in an s3 bucket and delivers it for later use, such as when the researcher wants to mount the manifest in their workspace. If the "prefix" config variable is set, user folders will be stored in a directory of that name within the s3 bucket.
+## Overview
 
-Manifest files should contain JSON of the form
+This service handles reading from and writing to a user's S3 folder containing their manifests, cohorts, and metadata export files. A manifest is a JSON file that lists records a researcher may be interested in analyzing. This service stores files to a user folder in an S3 bucket and delivers them for later use, such as when the researcher wants to mount the manifest in their workspace. If the `prefix` config variable is set, user folders will be stored in a directory of that name within the S3 bucket.
 
-    [
-      {
-        "object_id": "757508f5-2697-4700-a69f-89d173a4c514",
-        "subject_id": "da6a14a0-6498-4941-a1b2-bbe45a2ccac2"
-      },
-      {
-        "object_id": "835db5c6-5cc8-4d70-a3b2-9a18ad4912cd",
-        "subject_id": "da6a14a0-6498-4941-a1b2-bbe45a2ccac2"
-      },
-      ...
-    ]
+### Manifest Format
 
-### Endpoints
+Manifest files should contain JSON of the form:
 
-For all endpoints, the request must contain an Authorization header with an access_token. The user needs read access and read-storage access
-on at least one project in order to use this service.
+```json
+[
+  {
+    "object_id": "757508f5-2697-4700-a69f-89d173a4c514",
+    "subject_id": "da6a14a0-6498-4941-a1b2-bbe45a2ccac2"
+  },
+  {
+    "object_id": "835db5c6-5cc8-4d70-a3b2-9a18ad4912cd",
+    "subject_id": "da6a14a0-6498-4941-a1b2-bbe45a2ccac2"
+  }
+]
+```
 
-Lists a user's manifests:
+Each record must contain at least an `object_id` key. Additional keys are preserved.
 
-    GET /
-    Returns: { "manifests" : [ { "filename" : "manifest-2019-02-27T11-44-20.548126.json", "last_modified" : "2019-02-27 17:44:21" }, ... ] }
+## Endpoints
 
-Create a manifest file in the user's folder:
+For all endpoints (except `/_status`), the request must contain an `Authorization` header with a valid access token. The user needs read access and read-storage access on at least one project in order to use this service.
 
-    POST /
-    Post body: The contents of the manifest.json file to be created.
-    Returns: { "filename" : "manifest-2019-03-09T21-47-04.041499.json" }
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/_status` | Health check (no auth required) |
+| GET | `/` | List user's manifests |
+| POST/PUT | `/` | Create a manifest file |
+| GET | `/file/{filename}` | Read manifest file contents |
+| GET | `/cohorts` | List user's cohorts |
+| POST/PUT | `/cohorts` | Add a PFB GUID as a cohort |
+| GET | `/metadata` | List user's metadata exports |
+| POST/PUT | `/metadata` | Create a metadata export file |
+| GET | `/metadata/{filename}` | Read metadata file contents |
 
-Read the contents of a manifest file in the user's folder:
+On failure, endpoints return JSON in the form:
 
-    GET /file/<filename.json>
-    Returns: { "body" : "the-body-of-the-manifest-file-as-a-string" }
+```json
+{ "detail": "error message" }
+```
 
-Lists a user's cohorts:
+## API Documentation
 
-    GET /cohorts
-    Returns: { "cohorts" : [ { "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe", "last_modified" : "2019-02-27 17:44:21" }, ... ] }
+The [OpenAPI](https://github.com/OAI/OpenAPI-Specification)/[Swagger](https://swagger.io/) specification is stored in the `openapi/` directory and can be visualized [here](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/manifestservice/master/openapi/swagger.yaml).
 
-Create a cohort GUID in the user's folder:
+To regenerate the static OpenAPI files:
 
-    POST /cohorts
-    Post body: { "guid": "5183a350-9d56-4084-8a03-6471cafeb7fe" }
-    Returns: { "filename" : "5183a350-9d56-4084-8a03-6471cafeb7fe" }
+```bash
+python build_openapi.py
+```
 
-Lists a user's exported metadata objects:
+FastAPI also serves interactive docs at `/docs` (Swagger UI), `/redoc`, and `/openapi.json` when running locally.
 
-    GET /metadata
-    Returns: { "metadata" : [ { "filename" : "metadata-2024-06-13T17-14-46.026593.json", "last_modified" : "2024-06-13 17:14:47" }, ... ] }
+## Running the Service Locally
 
-Create an exported metadata object in the user's folder:
+1. Fill out `config.json` with the correct values (see [Configuration](#configuration))
+2. Install dependencies and run:
 
-    POST /metadata
-    Post body: { "some_metadata_key": "some_metadata_value" }
-    Returns: { "filename" : "metadata-2024-06-13T17-14-46.026593.json" }
+```bash
+poetry install
+python run.py
+```
 
-Read the contents of an exported metadata object file in the user's folder:
-
-    GET /metadata/<filename.json>
-    Returns: { "body" : "the-body-of-the-exported-metadata-object-file-as-a-string" }
-
-On failure, the above endpoints all return JSON in the form
-
-    { "error" : "error-message" }
-
-### OpenAPI spec
-
-The [OpenAPI](https://github.com/OAI/OpenAPI-Specification)/[Swagger 2.0](https://swagger.io/) specification of a service is stored in its `swagger.yaml` and can be visualized [here](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/manifestservice/master/openapi/swagger.yaml).
-
-### Running the service locally
-If you want to run this service locally, fill out the config.json file with the correct values and then run:
-
-    poetry shell
-    poetry install
-    python3 run.py
-
-And then GET and POST to http://localhost:5000/
+The service starts at `http://localhost:8000/`.
 
 You'll need AWS credentials in your environment to run this locally.
 
-### Quickstart with Helm
+## Configuration
 
-You can now deploy individual services via Helm!
-Please refer to the Helm quickstart guide HERE (https://github.com/uc-cdis/manifestservice/blob/master/docs/quickstart_helm.md)
+The service loads configuration from `config.json` (or the path in `MANIFEST_SERVICE_CONFIG_PATH` env var). Required fields:
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `MANIFEST_BUCKET_NAME` | Yes | S3 bucket for storing user data |
+| `hostname` | Yes | Hostname of the Gen3 deployment |
+| `prefix` | No | Optional folder prefix in S3 bucket |
+
+Environment variable overrides:
+- `MANIFEST_SERVICE_CONFIG_PATH` — Path to config file (default: `config.json`)
+- `FENCE_URL` — Override the Fence service URL (default: `http://fence-service/`)
+
+## Development
+
+### Install Dependencies
+
+```bash
+poetry install
+```
+
+### Run Tests
+
+```bash
+poetry run pytest tests/ -v
+```
+
+## Quickstart with Helm
+
+You can deploy individual services via Helm.
+Please refer to the [Helm quickstart guide](https://github.com/uc-cdis/manifestservice/blob/master/docs/quickstart_helm.md).
