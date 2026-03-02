@@ -4,17 +4,16 @@ Manifest, Cohort, and Metadata routes for Manifest Service.
 NOTE - Flask -> FastAPI migration notes:
 - @blueprint.route("/", methods=["GET"]) -> @router.get("/")
 - flask.jsonify(dict), status_code -> return dict (FastAPI auto-serializes)
-- Request body flask.request.json -> request body parameter with type hint (TODO - could use Pydantic)
+- Request body validated via Pydantic models (ManifestRecord, CohortCreateRequest)
 - Manual _authenticate_user() call -> CurrentUserClaims dependency injected
 - flask.current_app.config -> settings parameter injected by FastAPI
 - BREAKING CHANGES - HTTP exceptions replace (jsonify(error), status_code)
     - 500 will now return "detail" not "error"
-    - 400 will be 422 for some input validation errors
+    - 400 will be 422 for input validation errors
     - 403 now covered by authutils "detail": Bad bearer token
 """
 
 import html
-import re
 from typing import Any
 
 from cdislogging import get_logger
@@ -22,6 +21,14 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 
 from ..dependencies import CurrentUserClaims, SettingsDep, get_user_folder_name
+from ..schemas import (
+    CohortCreateRequest,
+    CohortListResponse,
+    FilenameResponse,
+    ManifestListResponse,
+    ManifestRecord,
+    MetadataListResponse,
+)
 from ..services.s3 import (
     list_files_in_bucket,
     get_file_contents,
@@ -32,19 +39,18 @@ from ..services.s3 import (
 
 logger = get_logger("manifestservice_logger", log_level="info")
 
-router = APIRouter(tags=["manifests"])
+router = APIRouter()
 
 
-@router.get("/")
+@router.get("/", tags=["manifests"], summary="List user's manifests")
 def get_manifests(
     claims: CurrentUserClaims,
     settings: SettingsDep,
-) -> dict:
+) -> ManifestListResponse:
     """
     Returns a list of filenames corresponding to the user's manifests.
 
-    We find the appropriate folder ("prefix") in the bucket by asking Fence for
-    info about the user's access token.
+    The appropriate folder is determined from the user's JWT claims (sub field).
     """
     folder_name = get_user_folder_name(claims, settings)
 
@@ -54,10 +60,14 @@ def get_manifests(
             status_code=500, detail="Currently unable to connect to S3."
         )
 
-    return {"manifests": result["manifests"]}
+    return ManifestListResponse(manifests=result["manifests"])
 
 
-@router.get("/file/{file_name}")
+@router.get(
+    "/file/{file_name}",
+    tags=["manifests"],
+    summary="Get manifest file contents",
+)
 def get_manifest_file(
     file_name: str,
     claims: CurrentUserClaims,
@@ -66,9 +76,8 @@ def get_manifest_file(
     """
     Returns the requested manifest file from the user's folder.
 
-    The argument is the filename of the manifest you want to download,
-    of the form "manifest-timestamp.json". The user folder prefix is
-    encapsulated from the caller -- just provide the basepath.
+    The file_name argument should be of the form "manifest-timestamp.json".
+    The user folder prefix is determined from JWT claims.
     """
     file_name = html.escape(file_name)
     if not file_name.endswith("json"):
@@ -83,48 +92,44 @@ def get_manifest_file(
     return PlainTextResponse(content=content)
 
 
-@router.put("/")
-@router.post("/")
+@router.put("/", tags=["manifests"], summary="Add manifest to S3 bucket")
+@router.post("/", tags=["manifests"], summary="Add manifest to S3 bucket")
 def put_manifest(
-    manifest_json: list[dict[str, Any]],
+    manifest_json: list[ManifestRecord],
     claims: CurrentUserClaims,
     settings: SettingsDep,
-) -> dict:
+) -> FilenameResponse:
     """
     Add manifest to S3 bucket.
 
     The manifest format must be a list of objects, where each object contains
     at least an "object_id" key.
-    """
-    required_keys = ["object_id"]
-    if not _is_valid_manifest(manifest_json, required_keys):
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Manifest format is invalid. Please POST a list of key-value pairs, "
-                f"like [{{'k': v}}, ...]. Required keys are: {' '.join(required_keys)}"
-            ),
-        )
 
-    result, ok = add_manifest_to_bucket(claims, manifest_json, settings)
+    Example request body:
+    ```json
+    [{"object_id": "dg.1234/abc-def-123", "subject_id": "patient_001"}]
+    ```
+    """
+    manifest_dicts = [record.model_dump() for record in manifest_json]
+
+    result, ok = add_manifest_to_bucket(claims, manifest_dicts, settings)
     if not ok:
         raise HTTPException(
             status_code=500, detail="Currently unable to connect to S3."
         )
 
-    return {"filename": result}
+    return FilenameResponse(filename=result)
 
 
-@router.get("/cohorts")
+@router.get("/cohorts", tags=["cohorts"], summary="List user's cohorts")
 def get_cohorts(
     claims: CurrentUserClaims,
     settings: SettingsDep,
-) -> dict:
+) -> CohortListResponse:
     """
-    Returns a list of filenames (GUIDs) corresponding to the user's exported PFBs.
+    Returns a list of GUIDs corresponding to the user's exported PFBs.
 
-    We find the appropriate folder ("prefix") in the bucket by asking Fence for
-    info about the user's access token.
+    The appropriate folder is determined from the user's JWT claims (sub field).
     """
     folder_name = get_user_folder_name(claims, settings)
 
@@ -134,47 +139,42 @@ def get_cohorts(
             status_code=500, detail="Currently unable to connect to S3."
         )
 
-    return {"cohorts": result["cohorts"]}
+    return CohortListResponse(cohorts=result["cohorts"])
 
 
-@router.put("/cohorts")
-@router.post("/cohorts")
+@router.put("/cohorts", tags=["cohorts"], summary="Add PFB GUID to S3 bucket")
+@router.post("/cohorts", tags=["cohorts"], summary="Add PFB GUID to S3 bucket")
 def put_pfb_guid(
-    body: dict,
+    body: CohortCreateRequest,
     claims: CurrentUserClaims,
     settings: SettingsDep,
-) -> dict:
+) -> FilenameResponse:
     """
     Add PFB GUID to S3 bucket.
 
-    Creates a new file named with the value of the GUID for the PFB
-    in the user's cohorts/ folder.
+    Creates a file named with the GUID value in the user's cohorts/ folder.
 
-    Request body: {"guid": "5183a350-9d56-4084-8a03-6471cafeb7fe"}
+    Example request body:
+    ```json
+    {"guid": "5183a350-9d56-4084-8a03-6471cafeb7fe"}
+    ```
     """
-    guid = body.get("guid")
-    if not _is_valid_guid(guid):
-        raise HTTPException(
-            status_code=400,
-            detail=f"The provided GUID: {guid} is invalid.",
-        )
-
-    result, ok = add_guid_to_bucket(claims, guid, settings)
+    result, ok = add_guid_to_bucket(claims, body.guid, settings)
     if not ok:
         raise HTTPException(
             status_code=500, detail="Currently unable to connect to S3."
         )
 
-    return {"filename": result}
+    return FilenameResponse(filename=result)
 
 
-@router.get("/metadata")
+@router.get("/metadata", tags=["metadata"], summary="List user's metadata files")
 def get_metadata(
     claims: CurrentUserClaims,
     settings: SettingsDep,
-) -> dict:
+) -> MetadataListResponse:
     """
-    List all exported metadata objects associated with user.
+    List all exported metadata files associated with user.
     """
     folder_name = get_user_folder_name(claims, settings)
 
@@ -184,17 +184,21 @@ def get_metadata(
             status_code=500, detail="Currently unable to connect to S3."
         )
 
-    return {"external_file_metadata": result["metadata"]}
+    return MetadataListResponse(external_file_metadata=result["metadata"])
 
 
-@router.get("/metadata/{file_name}")
+@router.get(
+    "/metadata/{file_name}",
+    tags=["metadata"],
+    summary="Get metadata file contents",
+)
 def get_metadata_file(
     file_name: str,
     claims: CurrentUserClaims,
     settings: SettingsDep,
 ) -> PlainTextResponse:
     """
-    Retrieve a specific exported metadata file.
+    Retrieve a specific exported metadata file by filename.
     """
     file_name = html.escape(file_name)
     if not file_name.endswith("json"):
@@ -209,15 +213,15 @@ def get_metadata_file(
     return PlainTextResponse(content=content)
 
 
-@router.put("/metadata")
-@router.post("/metadata")
+@router.put("/metadata", tags=["metadata"], summary="Create metadata export file")
+@router.post("/metadata", tags=["metadata"], summary="Create metadata export file")
 def put_metadata(
     metadata_body: list[dict[str, Any]],
     claims: CurrentUserClaims,
     settings: SettingsDep,
-) -> dict:
+) -> FilenameResponse:
     """
-    Create an exported metadata object.
+    Create an exported metadata file.
     """
     result, ok = add_metadata_to_bucket(claims, metadata_body, settings)
     if not ok:
@@ -225,31 +229,4 @@ def put_metadata(
             status_code=500, detail="Currently unable to connect to S3."
         )
 
-    return {"filename": result}
-
-
-def _is_valid_manifest(manifest_json: list[dict], required_keys: list[str]) -> bool:
-    """
-    Returns True if the manifest_json is a list of the form [{'k': v}, ...],
-    where each member dictionary contains all required keys.
-    """
-    for record in manifest_json:
-        if not set(required_keys).issubset(record.keys()):
-            return False
-    return True
-
-
-def _is_valid_guid(guid: str | None) -> bool:
-    """
-    Check if input value is a valid GUID.
-
-    Valid GUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    (with optional prefix before the UUID portion)
-    """
-    if guid is None:
-        return False
-    regex = re.compile(
-        r"^.*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
-        re.I,
-    )
-    return bool(regex.match(str(guid)))
+    return FilenameResponse(filename=result)

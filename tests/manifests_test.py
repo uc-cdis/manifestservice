@@ -1,18 +1,23 @@
 """
-Tests for manifest routes and helper functions.
+Tests for manifest routes and Pydantic models.
 
 NOTE - Flask -> FastAPI migration notes:
 - r.json (property) -> r.json() (method) - FastAPI TestClient
 - Removed _authenticate_user mock assertions (auth via dependency injection)
+- _is_valid_manifest() replaced by ManifestRecord Pydantic model validation
+- Invalid manifest keys now return 422 (Pydantic) instead of 400
 """
 
 import json as json_utils
 import random
 
+import pytest
+from pydantic import ValidationError
+
+from manifestservice.schemas import ManifestRecord
 from manifestservice.services.s3 import (
     _generate_unique_filename_with_timestamp_and_increment,
 )
-from manifestservice.routers.manifests import _is_valid_manifest
 
 
 def test_generate_unique_manifest_filename_basic_date_generation():
@@ -64,31 +69,32 @@ def test_generate_unique_manifest_filename_basic_date_generation():
     assert filename == "manifest-a-b-c-3.json"
 
 
-def test_is_valid_manifest():
+def test_manifest_record_requires_object_id():
     """
-    Tests that the function _is_valid_manifest() correctly determines
-    if the input manifest string is valid.
+    Test ManifestRecord rejects records missing object_id.
     """
-    required_keys = ["object_id"]
-    test_manifest = [{"foo": 44}]
-    is_valid = _is_valid_manifest(test_manifest, required_keys)
-    assert is_valid is False
+    record = ManifestRecord(object_id="dg.1234/abc")
+    assert record.object_id == "dg.1234/abc"
 
-    test_manifest = [{"foo": 44, "bar": 88}]
-    is_valid = _is_valid_manifest(test_manifest, required_keys)
-    assert is_valid is False
+    with pytest.raises(ValidationError):
+        ManifestRecord()
 
-    test_manifest = [{"foo": 44, "object_id": 88}]
-    is_valid = _is_valid_manifest(test_manifest, required_keys)
-    assert is_valid is True
+    with pytest.raises(ValidationError):
+        ManifestRecord(foo=44)
 
-    test_manifest = [{"subject_id": 44, "object_id": 88}]
-    is_valid = _is_valid_manifest(test_manifest, required_keys)
-    assert is_valid is True
 
-    test_manifest = [{"object_id": 88}]
-    is_valid = _is_valid_manifest(test_manifest, required_keys)
-    assert is_valid is True
+def test_manifest_record_allows_extra_fields():
+    """
+    ManifestRecord preserves extra fields.
+    """
+    record = ManifestRecord(
+        object_id="dg.1234/abc", subject_id="patient_001", project="test-project"
+    )
+    dumped = record.model_dump()
+    assert dumped["object_id"] == "dg.1234/abc"
+    assert dumped["subject_id"] == "patient_001"
+    assert dumped["project"] == "test-project"
+    assert len(dumped) == 3
 
 
 def test_POST_handles_invalid_json(client, mocks):
@@ -101,16 +107,16 @@ def test_POST_handles_invalid_json(client, mocks):
 
 def test_POST_handles_invalid_manifest_keys(client, mocks):
     """
-    Test that we get a 400 if the manifest is missing the required key -- object_id.
+    Test that we get a 422 if the manifest is missing the required key -- object_id.
     """
     test_manifest = [{"foo": 44, "bar": 88}]
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     r = client.post("/", json=test_manifest, headers=headers)
-    assert r.status_code == 400
+    assert r.status_code == 422
 
     test_manifest = [{"obj__id": 44, "subject_id": 88}]
     r = client.post("/", json=test_manifest, headers=headers)
-    assert r.status_code == 400
+    assert r.status_code == 422
 
 
 def test_POST_successful_manifest_upload(client, mocks):
@@ -128,8 +134,8 @@ def test_POST_successful_manifest_upload(client, mocks):
         random.randint(1, 101),
     ]
     test_manifest = [
-        {"subject_id": random_nums[0], "object_id": random_nums[1]},
-        {"subject_id": random_nums[2], "object_id": random_nums[3]},
+        {"subject_id": str(random_nums[0]), "object_id": str(random_nums[1])},
+        {"subject_id": str(random_nums[2]), "object_id": str(random_nums[3])},
     ]
 
     headers = {"Content-Type": "application/json", "Accept": "application/json"}

@@ -1,14 +1,20 @@
 """
-Tests for cohort/PFB routes and S3 list function.
+Tests for cohort/PFB routes, S3 list function, and CohortCreateRequest model.
 
 NOTE - Flask -> FastAPI migration notes:
 - r.json (property) -> r.json() (method) - FastAPI TestClient
 - Error response key changed from "error" to "detail"
 - Removed _authenticate_user mock assertions (auth via dependency injection)
+- _is_valid_guid() replaced by CohortCreateRequest Pydantic model validation
+- Invalid GUID now returns 422 (Pydantic) instead of 400
 """
 
 import json as json_utils
 
+import pytest
+from pydantic import ValidationError
+
+from manifestservice.schemas import CohortCreateRequest
 from manifestservice.services.s3 import list_files_in_bucket
 
 
@@ -92,3 +98,33 @@ def test_list_files_in_bucket(client, mocked_bucket):
             assert cohort["filename"] == "guid-without-prefix"
         else:
             assert cohort["filename"] == "dg.mytest/guid-with-prefix"
+
+
+def test_cohort_create_request_validates_guid():
+    """
+    Tests that CohortCreateRequest rejects invalid GUID formats.
+    """
+    # Valid GUIDs
+    CohortCreateRequest(guid="5183a350-9d56-4084-8a03-6471cafeb7fe")
+    CohortCreateRequest(guid="dg.1234/5183a350-9d56-4084-8a03-6471cafeb7fe")
+
+    # Invalid GUIDs
+    with pytest.raises(ValidationError):
+        CohortCreateRequest(guid="not-a-guid")
+
+    with pytest.raises(ValidationError):
+        CohortCreateRequest(guid="")
+
+    with pytest.raises(ValidationError):
+        CohortCreateRequest(guid="12345")
+
+
+def test_POST_invalid_guid_returns_422(client, mocks):
+    """
+    Test that posting an invalid GUID returns 422.
+    """
+    post_body = {"guid": "not-a-valid-guid"}
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    r = client.post("/cohorts", content=json_utils.dumps(post_body), headers=headers)
+    assert r.status_code == 422
+    assert mocks["add_guid_to_bucket"].call_count == 0

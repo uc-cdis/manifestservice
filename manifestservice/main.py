@@ -24,6 +24,7 @@ from fastapi.responses import JSONResponse
 from .config import get_settings, clear_settings_cache
 from .errors import register_error_handlers
 from .routers import manifests_router
+from .schemas import HealthCheckResponse
 
 logger = get_logger("manifestservice_logger", log_level="info")
 
@@ -56,7 +57,37 @@ def create_app() -> FastAPI:
     """
     app = FastAPI(
         title="Manifest Service",
+        description=(
+            "A microservice that facilitates manifest creation and retrieval.\n\n"
+            "Code is available on [GitHub](https://github.com/uc-cdis/manifestservice)."
+        ),
         version=version("manifestservice"),
+        contact={
+            "name": "CTDS UChicago",
+            "email": "cdis@uchicago.edu",
+        },
+        license_info={
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html",
+        },
+        openapi_tags=[
+            {
+                "name": "manifests",
+                "description": "Operations for managing user manifest files (lists of object IDs).",
+            },
+            {
+                "name": "cohorts",
+                "description": "Operations for managing cohort exports (PFB GUIDs).",
+            },
+            {
+                "name": "metadata",
+                "description": "Operations for managing exported metadata files.",
+            },
+            {
+                "name": "system",
+                "description": "System health and status endpoints.",
+            },
+        ],
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
@@ -67,12 +98,12 @@ def create_app() -> FastAPI:
 
     app.include_router(manifests_router)
 
-    @app.get("/_status", tags=["system"])
-    def health_check() -> dict:
+    @app.get("/_status", tags=["system"], summary="Health check")
+    def health_check() -> HealthCheckResponse:
         """
         Health check endpoint
         """
-        return {"status": "Healthy"}
+        return HealthCheckResponse(status="Healthy")
 
     return app
 
