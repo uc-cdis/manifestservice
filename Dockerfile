@@ -9,6 +9,8 @@ WORKDIR /${appname}
 
 RUN chown -R gen3:gen3 /${appname}
 
+USER root
+
 RUN chown -R gen3:gen3 /venv/
 
 # Builder stage
