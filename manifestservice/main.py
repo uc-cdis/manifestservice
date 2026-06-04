@@ -1,5 +1,5 @@
 """
-FastAPI app factory pattern Manifest Service.
+FastAPI app for Manifest Service.
 
 NOTE - Flask -> FastAPI migration notes:
 - Uses FastAPI instead of Flask
@@ -9,7 +9,7 @@ NOTE - Flask -> FastAPI migration notes:
 - Uses uvicorn for run_for_development
 - Uses /docs for Swagger UI (FastAPI default), replaces flasgger
 - OpenAPI schema auto-generated from route definitions and Pydantic models
-- Custom exception handlers registered for S3 errors and generic exceptions
+- Exception handlers registered for S3 errors and generic exceptions
 """
 
 import logging
