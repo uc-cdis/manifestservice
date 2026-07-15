@@ -6,18 +6,17 @@ from .manifests import blueprint as manifests_bp
 import os
 import json
 
-TRUSTED_CONFIG_PATH_PREFIXES  = [
-    os.getcwd(),
-    "/var/gen3"
-]
+TRUSTED_CONFIG_PATH_PREFIXES = [os.getcwd(), "/var/gen3"]
+
 
 def validate_config_path(config_path):
     for trusted_path in TRUSTED_CONFIG_PATH_PREFIXES:
-        if os.path.commonpath((os.path.realpath(config_path), trusted_path)) == trusted_path:
+        if (
+            os.path.commonpath((os.path.realpath(config_path), trusted_path))
+            == trusted_path
+        ):
             return
-    raise ValueError(
-        "Illegal config file path provided as {}".format(config_path)
-    )
+    raise ValueError("Illegal config file path provided as {}".format(config_path))
 
 
 def create_app():
@@ -48,11 +47,11 @@ def create_app():
     # If prefix is set, user folders will be stored in a directory named PREFIX
     if "prefix" in config_dict and config_dict["prefix"] != "":
         app.config["PREFIX"] = config_dict["prefix"]
-    app.config["OIDC_ISSUER"] = "https://%s/user" % config_dict["hostname"]
+    app.config["AUTHZ_AUDIENCE"] = "gen3"
     app.config["MANIFEST_BUCKET_NAME"] = config_dict["manifest_bucket_name"]
 
     required_config_variables = [
-        "OIDC_ISSUER",
+        "AUTHZ_AUDIENCE",
         "MANIFEST_BUCKET_NAME",
     ]
     if not set(required_config_variables).issubset(set(app.config.keys())):

@@ -318,16 +318,14 @@ def _add_metadata_to_bucket(current_token, metadata_body):
 
     if not ok:
         return None, False
-    filename = _generate_unique_filename(
-        result["metadata"], file_type="metadata"
-    )
+    filename = _generate_unique_filename(result["metadata"], file_type="metadata")
 
     filepath_in_bucket = folder_name + "/exported-metadata/" + filename
     try:
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        obj.put(Body=bytes(json.dumps(metadata_body).encode('UTF-8')))
+        obj.put(Body=bytes(json.dumps(metadata_body).encode("UTF-8")))
     except Exception as e:
         return str(e), False
 
@@ -361,7 +359,7 @@ def _add_manifest_to_bucket(current_token, manifest_json):
         obj = s3.Object(
             flask.current_app.config.get("MANIFEST_BUCKET_NAME"), filepath_in_bucket
         )
-        obj.put(Body=bytes(json.dumps(manifest_json).encode('UTF-8')))
+        obj.put(Body=bytes(json.dumps(manifest_json).encode("UTF-8")))
     except Exception as e:
         logger.error(f"Failed to add manifest to bucket: {e}")
         return str(e), False
@@ -456,9 +454,9 @@ def _generate_unique_filename_with_timestamp_and_increment(
     Adds an increment to the filename if there happens to be another timestamped file with the same name
     (unlikely, but good to check).
     """
-    filename_prefix="manifest-"
-    if file_type=="metadata":
-        filename_prefix="metadata-"
+    filename_prefix = "manifest-"
+    if file_type == "metadata":
+        filename_prefix = "metadata-"
     filename_without_extension = filename_prefix + timestamp.replace(":", "-")
     extension = ".json"
 
@@ -558,7 +556,7 @@ def _authenticate_user():
     If the user's access token is invalid, they get a 403.
     If the user lacks read access on at least one project, they get a 403.
     """
-    audience = flask.current_app.config["OIDC_ISSUER"]
+    audience = flask.current_app.config["AUTHZ_AUDIENCE"]
     try:
         set_current_token(validate_request(scope={"user"}, audience=audience))
     except Exception as e:
