@@ -80,7 +80,7 @@ def get_manifest_file(
     The user folder prefix is determined from JWT claims.
     """
     file_name = html.escape(file_name)
-    if not file_name.endswith("json"):
+    if not file_name.endswith(".json"):
         raise HTTPException(
             status_code=400,
             detail="Incorrect usage. You can only use this pathway to request files of type JSON.",
@@ -203,7 +203,7 @@ def get_metadata_file(
     Retrieve a specific exported metadata file by filename.
     """
     file_name = html.escape(file_name)
-    if not file_name.endswith("json"):
+    if not file_name.endswith(".json"):
         raise HTTPException(
             status_code=400,
             detail="Incorrect usage. You can only use this pathway to request files of type JSON.",
