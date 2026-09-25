@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Any
 
 import boto3
+from botocore.exceptions import ClientError
 from cdislogging import get_logger
 
 from ..config import Settings
@@ -97,7 +98,7 @@ def list_files_in_bucket(bucket_name: str, folder: str) -> tuple[dict[str, list]
     return rv, True
 
 
-def get_file_contents(bucket_name: str, folder: str, filename: str) -> str:
+def get_file_contents(bucket_name: str, folder: str, filename: str) -> str | None:
     """
     Returns the body of a requested file as a string.
 
@@ -107,12 +108,20 @@ def get_file_contents(bucket_name: str, folder: str, filename: str) -> str:
         filename: Name of the file to retrieve
 
     Returns:
-        File contents as a string
+        File contents as a string, or None if the file does not exist
+
+    Raises:
+        ClientError: For any other S3 error
     """
     client = boto3.client(
         "s3",
     )
-    obj = client.get_object(Bucket=bucket_name, Key=folder + "/" + filename)
+    try:
+        obj = client.get_object(Bucket=bucket_name, Key=folder + "/" + filename)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            return None
+        raise
     as_bytes = obj["Body"].read()
     as_string = as_bytes.decode("utf-8")
     return as_string.replace("'", '"')

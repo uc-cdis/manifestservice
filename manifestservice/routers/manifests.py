@@ -89,6 +89,8 @@ def get_manifest_file(
     folder_name = get_user_folder_name(claims, settings)
 
     content = get_file_contents(settings.manifest_bucket_name, folder_name, file_name)
+    if content is None:
+        raise HTTPException(status_code=404, detail="File not found.")
     return PlainTextResponse(content=content)
 
 
@@ -210,6 +212,8 @@ def get_metadata_file(
     folder_name = get_user_folder_name(claims, settings) + "/exported-metadata"
 
     content = get_file_contents(settings.manifest_bucket_name, folder_name, file_name)
+    if content is None:
+        raise HTTPException(status_code=404, detail="File not found.")
     return PlainTextResponse(content=content)
 
 
