@@ -26,7 +26,9 @@ from ..dependencies import get_user_folder_name
 logger = get_logger("manifestservice_logger", log_level="info")
 
 
-def list_files_in_bucket(bucket_name: str, folder: str) -> tuple[dict[str, list], bool]:
+def list_files_in_bucket(
+    bucket_name: str, folder: str
+) -> tuple[dict[str, list] | None, bool]:
     """
     Lists the files in an s3 bucket for a given folder.
 
@@ -35,7 +37,8 @@ def list_files_in_bucket(bucket_name: str, folder: str) -> tuple[dict[str, list]
         folder: User's folder prefix (e.g., "user-123" or "prefix/user-123")
 
     Returns:
-        Tuple of (result_dict, success_bool).
+        Tuple of (result_dict, success_bool). On failure, returns (None, False)
+        and logs the error.
         result_dict is of the form:
         {
             "manifests:" [
@@ -84,7 +87,7 @@ def list_files_in_bucket(bucket_name: str, folder: str) -> tuple[dict[str, list]
         logger.error(
             f'Failed to list files in bucket "{bucket_name}" folder "{folder}": {e}'
         )
-        return str(e), False
+        return None, False
 
     manifests_sorted = sorted(manifests, key=lambda i: i["last_modified_timestamp"])
     guids_sorted = sorted(guids, key=lambda i: i["last_modified_timestamp"])
@@ -151,7 +154,7 @@ def add_manifest_to_bucket(
 
     result, ok = list_files_in_bucket(bucket_name, folder_name)
     if not ok:
-        return result, False
+        return None, False
 
     filename = _generate_unique_filename(result["manifests"])
     filepath_in_bucket = folder_name + "/" + filename
