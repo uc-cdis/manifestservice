@@ -85,9 +85,10 @@ class CohortCreateRequest(BaseModel):
     @field_validator("guid")
     @classmethod
     def validate_guid(cls, v: str) -> str:
+        # Allow at most one prefix segment (e.g "dg.1234/")
         pattern = re.compile(
-            r"^.*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-"
-            r"[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
+            r"^(?:[a-z0-9][a-z0-9._-]*/)?"
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
             re.I,
         )
         if not pattern.match(str(v)):
