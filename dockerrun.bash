@@ -1,4 +1,4 @@
 #!/bin/bash
 
 nginx
-gunicorn -c "/manifestservice/deployment/wsgi/gunicorn.conf.py"
+exec gunicorn -c "/manifestservice/deployment/wsgi/gunicorn.conf.py"
