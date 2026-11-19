@@ -20,8 +20,8 @@ import boto3
 from botocore.exceptions import ClientError
 from cdislogging import get_logger
 
-from ..config import Settings
-from ..dependencies import get_user_folder_name
+from manifestservice.config import Settings
+from manifestservice.dependencies import get_user_folder_name
 
 logger = get_logger("manifestservice_logger", log_level="info")
 

@@ -20,8 +20,12 @@ from cdislogging import get_logger
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 
-from ..dependencies import CurrentUserClaims, SettingsDep, get_user_folder_name
-from ..schemas import (
+from manifestservice.dependencies import (
+    CurrentUserClaims,
+    SettingsDep,
+    get_user_folder_name,
+)
+from manifestservice.schemas import (
     CohortCreateRequest,
     CohortListResponse,
     FilenameResponse,
@@ -29,7 +33,7 @@ from ..schemas import (
     ManifestRecord,
     MetadataListResponse,
 )
-from ..services.s3 import (
+from manifestservice.services.s3 import (
     list_files_in_bucket,
     get_file_contents,
     add_manifest_to_bucket,

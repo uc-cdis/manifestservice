@@ -2,7 +2,7 @@
 Service layer for Manifest Service.
 """
 
-from .s3 import (
+from manifestservice.services.s3 import (
     list_files_in_bucket,
     get_file_contents,
     add_manifest_to_bucket,

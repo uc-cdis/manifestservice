@@ -20,10 +20,10 @@ import uvicorn
 from cdislogging import get_logger
 from fastapi import FastAPI
 
-from .config import get_settings, clear_settings_cache
-from .errors import register_error_handlers
-from .routers import manifests_router
-from .schemas import HealthCheckResponse
+from manifestservice.config import get_settings, clear_settings_cache
+from manifestservice.errors import register_error_handlers
+from manifestservice.routers import manifests_router
+from manifestservice.schemas import HealthCheckResponse
 
 logger = get_logger("manifestservice_logger", log_level="info")
 
