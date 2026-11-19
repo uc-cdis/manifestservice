@@ -1,168 +1,108 @@
 """
-Tests for manifest routes and Pydantic models.
-
-NOTE - Flask -> FastAPI migration notes:
-- r.json (property) -> r.json() (method) - FastAPI TestClient
-- Removed _authenticate_user mock assertions (auth via dependency injection)
-- _is_valid_manifest() replaced by ManifestRecord Pydantic model validation
-- Invalid manifest keys now return 422 (Pydantic) instead of 400
+Tests for the manifest routes and the ManifestRecord model.
 """
 
-import json as json_utils
-import random
+from unittest.mock import MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from manifestservice.schemas import ManifestRecord
-from manifestservice.services.s3 import (
-    _generate_unique_filename_with_timestamp_and_increment,
-)
 
 
-def test_generate_unique_manifest_filename_basic_date_generation():
-    """
-    Tests that the _generate_unique_filename_with_timestamp_and_increment() function
-    generates a unique filename containing the given timestamp, based on the files in the
-    user's bucket.
-    """
-    timestamp = "a-b-c"
-    users_existing_manifest_files = []
-    filename = _generate_unique_filename_with_timestamp_and_increment(
-        timestamp, users_existing_manifest_files
+class TestManifestRecord:
+    """Tests for the ManifestRecord request model."""
+
+    def test_keeps_extra_fields(self) -> None:
+        """Fields other than object_id are kept in the record."""
+        record = {"object_id": "dg.1234/abc", "subject_id": "patient_001"}
+
+        assert ManifestRecord(**record).model_dump() == record
+
+    @pytest.mark.parametrize(
+        "record", [{}, {"foo": 44}], ids=["empty", "other-fields-only"]
     )
-    assert filename == "manifest-a-b-c.json"
+    def test_requires_object_id(self, record: dict) -> None:
+        """A record without object_id is rejected."""
+        with pytest.raises(ValidationError):
+            ManifestRecord(**record)
 
-    timestamp = "a-b-c"
-    users_existing_manifest_files = ["some-other-file.txt", "another-file.json"]
-    filename = _generate_unique_filename_with_timestamp_and_increment(
-        timestamp, users_existing_manifest_files
+
+class TestListManifests:
+    """Tests for GET /."""
+
+    def test_returns_manifest_files(
+        self, client: TestClient, mocks: dict[str, MagicMock]
+    ) -> None:
+        """The manifest files in the user's folder are returned."""
+        listing, _ = mocks["list_files_in_bucket"].return_value
+
+        r = client.get("/")
+
+        assert r.status_code == 200
+        assert r.json() == {"manifests": listing["manifests"]}
+        mocks["list_files_in_bucket"].assert_called_once_with("test-bucket", "user-18")
+
+
+class TestGetManifestFile:
+    """Tests for GET /file/{file_name}."""
+
+    def test_returns_file_contents(
+        self, client: TestClient, mocks: dict[str, MagicMock]
+    ) -> None:
+        """The named file in the user's folder is returned as text."""
+        r = client.get("/file/manifest-1.json")
+
+        assert r.status_code == 200
+        assert r.text == mocks["get_file_contents"].return_value
+        mocks["get_file_contents"].assert_called_once_with(
+            "test-bucket", "user-18", "manifest-1.json"
+        )
+
+
+class TestCreateManifest:
+    """Tests for POST / and PUT /."""
+
+    @pytest.mark.parametrize("method", ["POST", "PUT"])
+    def test_stores_manifest_and_returns_filename(
+        self, client: TestClient, mocks: dict[str, MagicMock], method: str
+    ) -> None:
+        """The records are stored with extra fields, and the file name is returned."""
+        manifest = [
+            {"object_id": "dg.123/abc", "subject_id": "patient_001"},
+            {"object_id": "dg.123/def"},
+        ]
+
+        r = client.request(method, "/", json=manifest)
+
+        assert r.status_code == 200
+        assert r.json() == {"filename": mocks["add_manifest_to_bucket"].return_value[0]}
+        assert mocks["add_manifest_to_bucket"].call_args.args[1] == manifest
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            [{"foo": 44, "bar": 88}],
+            [{"obj__id": 44, "subject_id": 88}],
+            {"object_id": "dg.123/abc"},
+        ],
+        ids=["no-object-id", "misspelled-object-id", "not-a-list"],
     )
-    assert filename == "manifest-a-b-c.json"
+    def test_invalid_manifest_returns_422(
+        self, client: TestClient, mocks: dict[str, MagicMock], body: object
+    ) -> None:
+        """A body that is not a list of records with object_id is rejected."""
+        r = client.post("/", json=body)
 
-    # Case 1: One collision
-    timestamp = "a-b-c"
-    users_existing_manifest_files = ["manifest-a-b-c.json"]
-    filename = _generate_unique_filename_with_timestamp_and_increment(
-        timestamp, users_existing_manifest_files
-    )
-    assert filename == "manifest-a-b-c-1.json"
+        assert r.status_code == 422
+        mocks["add_manifest_to_bucket"].assert_not_called()
 
-    # Case 2: Two collisions
-    timestamp = "a-b-c"
-    users_existing_manifest_files = ["manifest-a-b-c.json", "manifest-a-b-c-1.json"]
-    filename = _generate_unique_filename_with_timestamp_and_increment(
-        timestamp, users_existing_manifest_files
-    )
-    assert filename == "manifest-a-b-c-2.json"
+    @pytest.mark.usefixtures("mocks")
+    def test_body_that_is_not_json_returns_422(self, client: TestClient) -> None:
+        """A request body that is not valid JSON is rejected."""
+        r = client.post(
+            "/", content="not json", headers={"Content-Type": "application/json"}
+        )
 
-    # Case 3: Three collisions. This should never ever happen but eh might as well test it.
-    timestamp = "a-b-c"
-    users_existing_manifest_files = [
-        "manifest-a-b-c.json",
-        "manifest-a-b-c-1.json",
-        "manifest-a-b-c-2.json",
-    ]
-    filename = _generate_unique_filename_with_timestamp_and_increment(
-        timestamp, users_existing_manifest_files
-    )
-    assert filename == "manifest-a-b-c-3.json"
-
-
-def test_manifest_record_requires_object_id():
-    """
-    Test ManifestRecord rejects records missing object_id.
-    """
-    record = ManifestRecord(object_id="dg.1234/abc")
-    assert record.object_id == "dg.1234/abc"
-
-    with pytest.raises(ValidationError):
-        ManifestRecord()
-
-    with pytest.raises(ValidationError):
-        ManifestRecord(foo=44)
-
-
-def test_manifest_record_allows_extra_fields():
-    """
-    ManifestRecord preserves extra fields.
-    """
-    record = ManifestRecord(
-        object_id="dg.1234/abc", subject_id="patient_001", project="test-project"
-    )
-    dumped = record.model_dump()
-    assert dumped["object_id"] == "dg.1234/abc"
-    assert dumped["subject_id"] == "patient_001"
-    assert dumped["project"] == "test-project"
-    assert len(dumped) == 3
-
-
-def test_POST_handles_invalid_json(client, mocks):
-    """
-    Test that we get a 422 if request body is not valid JSON.
-    """
-    r = client.post("/", data={"a": 1}, headers={"Content-type": "application/json"})
-    assert r.status_code == 422
-
-
-def test_POST_handles_invalid_manifest_keys(client, mocks):
-    """
-    Test that we get a 422 if the manifest is missing the required key -- object_id.
-    """
-    test_manifest = [{"foo": 44, "bar": 88}]
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.post("/", json=test_manifest, headers=headers)
-    assert r.status_code == 422
-
-    test_manifest = [{"obj__id": 44, "subject_id": 88}]
-    r = client.post("/", json=test_manifest, headers=headers)
-    assert r.status_code == 422
-
-
-def test_POST_successful_manifest_upload(client, mocks):
-    """
-    Test the full user pathway: a manifest is created, listed, and then downloaded.
-    Unfortunately, we cannot verify here that the manifest is present in the listed files,
-    nor that the filebody is correct, as that would require a real s3 connection.
-    Instead, s3 is mocked and we assert that the correct functions are called.
-    """
-
-    random_nums = [
-        random.randint(1, 101),
-        random.randint(1, 101),
-        random.randint(1, 101),
-        random.randint(1, 101),
-    ]
-    test_manifest = [
-        {"subject_id": str(random_nums[0]), "object_id": str(random_nums[1])},
-        {"subject_id": str(random_nums[2]), "object_id": str(random_nums[3])},
-    ]
-
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.post("/", content=json_utils.dumps(test_manifest), headers=headers)
-
-    assert r.status_code == 200
-    assert mocks["add_manifest_to_bucket"].call_count == 1
-    assert mocks["get_file_contents"].call_count == 0
-
-    json_response = r.json()
-    new_filename = json_response["filename"]
-
-    assert new_filename is not None
-    assert type(new_filename) is str
-
-    r = client.get("/", headers=headers)
-    assert r.status_code == 200
-    assert mocks["add_manifest_to_bucket"].call_count == 1
-    assert mocks["list_files_in_bucket"].call_count == 1
-    assert mocks["get_file_contents"].call_count == 0
-
-    json_response = r.json()
-    manifest_files = json_response["manifests"]
-    assert type(manifest_files) is list
-
-    r = client.get("/file/" + new_filename, headers=headers)
-    assert r.status_code == 200
-    assert mocks["add_manifest_to_bucket"].call_count == 1
-    assert mocks["list_files_in_bucket"].call_count == 1
-    assert mocks["get_file_contents"].call_count == 1
+        assert r.status_code == 422

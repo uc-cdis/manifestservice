@@ -12,14 +12,13 @@ NOTE - Flask -> FastAPI migration notes:
 - Exception handlers registered for S3 errors and generic exceptions
 """
 
-import logging
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 from typing import AsyncGenerator
 
+import uvicorn
 from cdislogging import get_logger
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
 from .config import get_settings, clear_settings_cache
 from .errors import register_error_handlers
@@ -115,8 +114,6 @@ def run_for_development(**kwargs) -> None:
     """
     Run the app for local development.
     """
-    import uvicorn
-
     uvicorn.run(
         "manifestservice.main:app",
         host=kwargs.get("host", "127.0.0.1"),

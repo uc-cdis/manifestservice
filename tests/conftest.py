@@ -2,174 +2,84 @@
 Fixtures for Manifest Service tests.
 """
 
-from datetime import datetime
+from collections.abc import Iterator
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
-
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pytest_mock import MockerFixture
 
-from manifestservice.main import create_app
-from manifestservice.config import Settings, get_settings, clear_settings_cache
+from manifestservice.config import Settings, get_settings
 from manifestservice.dependencies import _validate_and_get_claims
+from manifestservice.main import create_app
+
+USER_CLAIMS = {"sub": "18"}
 
 
-TEST_USER_CLAIMS = {
-    "context": {
-        "user": {
-            "policies": [
-                "data_upload",
-                "programs.test-read-storage",
-                "programs.test-read",
-            ],
-            "google": {"proxy_group": None},
-            "is_admin": True,
-            "name": "example@uchicago.edu",
-            "projects": {
-                "test": [
-                    "read-storage",
-                    "read",
-                    "create",
-                    "write-storage",
-                    "upload",
-                    "update",
-                    "delete",
-                ]
-            },
-        }
-    },
-    "aud": ["data", "user", "fence", "openid"],
-    "sub": "18",
-}
-
-
-def test_claims():
-    """
-    Test JWT claims
-    """
-    return TEST_USER_CLAIMS
-
-
-def test_settings():
-    """
-    Test settings to run without needing config.json in the test env.
-    """
+@pytest.fixture
+def settings() -> Settings:
+    """Settings for a test deployment with no folder prefix."""
     return Settings(
-        manifest_bucket_name="test-bucket",
-        hostname="test.example.com",
-        prefix="",
-        oidc_issuer="https://test.example.com/user",
+        manifest_bucket_name="test-bucket", hostname="test.example.com", prefix=""
     )
 
 
 @pytest.fixture
-def client():
-    """
-    FastAPI test client.
-    """
-    clear_settings_cache()
+def app(settings: Settings) -> FastAPI:
+    """The app, configured with the `settings` fixture."""
     app = create_app()
-
-    # dependency ovverides
-    # https://fastapi.tiangolo.com/advanced/testing-dependencies/#use-the-app-dependency-overrides-attribute
-    app.dependency_overrides[get_settings] = test_settings
-    app.dependency_overrides[_validate_and_get_claims] = test_claims
-
-    with TestClient(app) as c:
-        yield c
-
-    # Cleanup
-    app.dependency_overrides.clear()
-    clear_settings_cache()
+    app.dependency_overrides[get_settings] = lambda: settings
+    return app
 
 
 @pytest.fixture
-def mocks(mocker):
-    """
-    Mock S3 functions.
-    """
-    all_mocks = {}
-
-    all_mocks["list_files_in_bucket"] = mocker.patch(
-        "manifestservice.routers.manifests.list_files_in_bucket",
-        return_value=(
-            {
-                "manifests": [
-                    {"filename": "manifest-a-b-c.json"},
-                ],
-                "cohorts": [{"filename": "18e32c12-a053-4ac5-90a5-f01f70b5c2be"}],
-                "metadata": [{"filename": "metadata-2024-04-26T18-59-21.226440.json"}],
-            },
-            True,
-        ),
-    )
-
-    all_mocks["add_manifest_to_bucket"] = mocker.patch(
-        "manifestservice.routers.manifests.add_manifest_to_bucket",
-        return_value=("manifest-xxx.json", True),
-    )
-
-    all_mocks["get_file_contents"] = mocker.patch(
-        "manifestservice.routers.manifests.get_file_contents", return_value=""
-    )
-
-    all_mocks["add_guid_to_bucket"] = mocker.patch(
-        "manifestservice.routers.manifests.add_guid_to_bucket",
-        return_value=("a-guid-value", True),
-    )
-
-    all_mocks["add_metadata_to_bucket"] = mocker.patch(
-        "manifestservice.routers.manifests.add_metadata_to_bucket",
-        return_value=("manifest-xxx.json", True),
-    )
-
-    return all_mocks
+def unauthenticated_client(app: FastAPI) -> Iterator[TestClient]:
+    """A client for the app that validates tokens the same way production does."""
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture
-def broken_s3_mocks(mocker):
-    """
-    Mock S3 connection failure for error handling tests.
-
-    Migration note:
-    - Mock the S3 functions to return (None, False) to simulate connection failure
-    - Old way mocked boto3.Session
-    """
-    all_mocks = {}
-
-    all_mocks["list_files_in_bucket"] = mocker.patch(
-        "manifestservice.routers.manifests.list_files_in_bucket",
-        return_value=(None, False),
-    )
-
-    return all_mocks
+def client(app: FastAPI) -> Iterator[TestClient]:
+    """A client for the app, signed in as the user with sub "18"."""
+    app.dependency_overrides[_validate_and_get_claims] = lambda: USER_CLAIMS
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture
-def mocked_bucket():
+def mocks(mocker: MockerFixture) -> dict[str, MagicMock]:
     """
-    Mock S3 bucket iteration for testing list_files_in_bucket directly.
+    Mock the S3 service functions that the routes call, keyed by function name.
 
-    This fixture mocks at the boto3 level for testing the actual S3 service
-    functions.
+    The user's folder lists one manifest, one cohort, and one metadata file.
+    Every upload succeeds.
     """
+    listing = {
+        "manifests": [_file_item("manifest-1.json")],
+        "cohorts": [_file_item("18e32c12-a053-4ac5-90a5-f01f70b5c2be")],
+        "metadata": [_file_item("metadata-1.json")],
+    }
+    return_values = {
+        "list_files_in_bucket": (listing, True),
+        "get_file_contents": '[{"object_id": "dg.123/abc"}]',
+        "add_manifest_to_bucket": ("manifest-2.json", True),
+        "add_guid_to_bucket": ("5183a350-9d56-4084-8a03-6471cafeb7fe", True),
+        "add_metadata_to_bucket": ("metadata-2.json", True),
+    }
+    return {
+        name: mocker.patch(
+            f"manifestservice.routers.manifests.{name}", return_value=value
+        )
+        for name, value in return_values.items()
+    }
 
-    class MockedS3Object:
-        def __init__(self, key):
-            self.key = key
-            self.last_modified = datetime.now()
 
-    mock = MagicMock()
-    mock.return_value = iter(
-        [
-            MockedS3Object(key="username/my-manifest.json"),
-            MockedS3Object(key="username/cohorts/guid-without-prefix"),
-            MockedS3Object(key="username/cohorts/dg.mytest/guid-with-prefix"),
-        ]
-    )
-
-    patcher = patch("boto3.resources.collection.ResourceCollection.__iter__", mock)
-    patcher.start()
-
-    yield mock
-
-    patcher.stop()
+def _file_item(filename: str) -> dict:
+    """Build one entry of a list_files_in_bucket result."""
+    return {
+        "filename": filename,
+        "last_modified": "2026-01-01 00:00:00",
+        "last_modified_timestamp": 1767225600.0,
+    }
