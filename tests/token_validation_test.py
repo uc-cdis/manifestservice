@@ -3,7 +3,8 @@ Tests that access tokens are validated end to end through authutils before any r
 
 Nothing here mocks authutils: tokens are signed with a throwaway RSA key and served from a local
 issuer, so the OIDC discovery, JWKS fetch, signature check and claim checks all run for real.
-That is what catches an authutils upgrade that changes how a token is accepted or rejected.
+That is what catches an authutils upgrade, or a change to the app's token validator arguments,
+that changes how a token is accepted or rejected.
 
 AWS is mocked, since these tests are about who gets in, not what is stored.
 """
@@ -14,37 +15,38 @@ import time
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import flask
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
-from flask.testing import FlaskClient
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from jwt.algorithms import RSAAlgorithm
+from pytest_mock import MockerFixture
 
-from manifestservice import manifests
+from manifestservice.config import Settings
+from manifestservice.dependencies import _validate_and_get_claims, build_token_validator
 
 KEY_ID = "test-key"
 AUDIENCE = "gen3"
-BUCKET_NAME = "test-bucket"
 SIGNING_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 # Not served by the issuer, so a token it signs fails signature verification.
 UNKNOWN_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
-# Every route in the blueprint, as (HTTP method, path). Each one starts by authenticating.
+# Every route, as (HTTP method, path). Each one requires a valid access token.
 ROUTES = [
-    ("GET", "/manifests/"),
-    ("GET", "/manifests/file/manifest.json"),
-    ("PUT", "/manifests/"),
-    ("POST", "/manifests/"),
-    ("GET", "/manifests/cohorts"),
-    ("PUT", "/manifests/cohorts"),
-    ("POST", "/manifests/cohorts"),
-    ("GET", "/manifests/metadata"),
-    ("GET", "/manifests/metadata/metadata.json"),
-    ("PUT", "/manifests/metadata"),
-    ("POST", "/manifests/metadata"),
+    ("GET", "/"),
+    ("GET", "/file/manifest.json"),
+    ("PUT", "/"),
+    ("POST", "/"),
+    ("GET", "/cohorts"),
+    ("PUT", "/cohorts"),
+    ("POST", "/cohorts"),
+    ("GET", "/metadata"),
+    ("GET", "/metadata/metadata.json"),
+    ("PUT", "/metadata"),
+    ("POST", "/metadata"),
 ]
 
 
@@ -66,7 +68,7 @@ def issuer() -> Iterator[str]:
     issuer_url = f"http://127.0.0.1:{server.server_port}/user"
 
     class IssuerHandler(BaseHTTPRequestHandler):
-        """Answers the two requests authutils makes to find an issuer's keys."""
+        """Answers the requests authutils makes to find an issuer's keys."""
 
         def do_GET(self) -> None:  # pylint: disable=invalid-name
             """
@@ -99,38 +101,33 @@ def issuer() -> Iterator[str]:
 
 
 @pytest.fixture
-def client(issuer: str) -> FlaskClient:
-    """A test client for a minimal app that serves just the manifests blueprint."""
-    app = flask.Flask(__name__)
-    app.config.update(
-        TESTING=True,
-        # The audience a token must carry, as read by _authenticate_user.
-        AUTHZ_AUDIENCE=AUDIENCE,
-        MANIFEST_BUCKET_NAME=BUCKET_NAME,
-        # authutils only trusts issuers named in OIDC_ISSUER, USER_API or BASE_URL.
-        OIDC_ISSUER=issuer,
+def token_client(app: FastAPI, settings: Settings, issuer: str) -> Iterator[TestClient]:
+    """A client for the app, with its token validator trusting the local issuer."""
+    issuer_settings = settings.model_copy(update={"oidc_issuer": issuer})
+    app.dependency_overrides[_validate_and_get_claims] = build_token_validator(
+        issuer_settings
     )
-    app.register_blueprint(manifests.blueprint, url_prefix="/manifests")
-    return app.test_client()
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture(autouse=True)
-def no_aws() -> Iterator[MagicMock]:
+def no_aws(mocker: MockerFixture) -> MagicMock:
     """Make sure no test can reach AWS. A request that gets past auth fails loudly instead."""
-    with patch.object(manifests, "boto3") as boto3_mock:
-        boto3_mock.Session.side_effect = AssertionError("AWS must not be reached")
-        boto3_mock.client.side_effect = AssertionError("AWS must not be reached")
-        yield boto3_mock
+    boto3_mock = mocker.patch("manifestservice.services.s3.boto3")
+    boto3_mock.Session.side_effect = AssertionError("AWS must not be reached")
+    boto3_mock.client.side_effect = AssertionError("AWS must not be reached")
+    return boto3_mock
 
 
 @pytest.fixture
-def list_files() -> Iterator[MagicMock]:
+def list_files(mocker: MockerFixture) -> MagicMock:
     """Stand in for the bucket listing, returning an empty folder."""
     empty_folder = {"manifests": [], "cohorts": [], "metadata": []}
-    with patch.object(
-        manifests, "_list_files_in_bucket", return_value=(empty_folder, True)
-    ) as mock:
-        yield mock
+    return mocker.patch(
+        "manifestservice.routers.manifests.list_files_in_bucket",
+        return_value=(empty_folder, True),
+    )
 
 
 def make_token(issuer: str, key: rsa.RSAPrivateKey = SIGNING_KEY, **claims: Any) -> str:
@@ -140,7 +137,7 @@ def make_token(issuer: str, key: rsa.RSAPrivateKey = SIGNING_KEY, **claims: Any)
     Args:
         issuer (str): Value for the `iss` claim.
         key (rsa.RSAPrivateKey): Key to sign with.
-        **claims (Any): Claims to add or override.
+        **claims (Any): Claims to add or override. A claim set to None is left out.
 
     Returns:
         str: The encoded token.
@@ -158,6 +155,7 @@ def make_token(issuer: str, key: rsa.RSAPrivateKey = SIGNING_KEY, **claims: Any)
         "context": {"user": {"name": "test-user"}},
     }
     payload.update(claims)
+    payload = {name: value for name, value in payload.items() if value is not None}
     return jwt.encode(payload, key, algorithm="RS256", headers={"kid": KEY_ID})
 
 
@@ -167,14 +165,14 @@ def bearer(token: str) -> dict[str, str]:
 
 
 def test_valid_token_is_accepted(
-    client: FlaskClient, issuer: str, list_files: MagicMock
+    token_client: TestClient, issuer: str, list_files: MagicMock
 ) -> None:
     """A valid access token gets through, and the user's folder comes from its `sub` claim."""
-    response = client.get("/manifests/", headers=bearer(make_token(issuer)))
+    response = token_client.get("/", headers=bearer(make_token(issuer)))
 
     assert response.status_code == 200
-    assert response.get_json() == {"manifests": []}
-    list_files.assert_called_once_with(BUCKET_NAME, "user-42")
+    assert response.json() == {"manifests": []}
+    list_files.assert_called_once_with("test-bucket", "user-42")
 
 
 @pytest.mark.parametrize(
@@ -183,48 +181,45 @@ def test_valid_token_is_accepted(
         ("wrong purpose", {"pur": "refresh"}),
         ("missing scope", {"scope": ["openid"]}),
         ("wrong audience", {"aud": ["not-gen3"]}),
+        ("no audience", {"aud": None}),
+        ("wrong issuer", {"iss": "https://other.example.com/user"}),
         ("expired", {"iat": int(time.time()) - 600, "exp": int(time.time()) - 300}),
         ("unknown signing key", {"key": UNKNOWN_KEY}),
     ],
 )
 def test_invalid_token_is_rejected(
-    client: FlaskClient,
+    token_client: TestClient,
     issuer: str,
     list_files: MagicMock,
     case: str,
     overrides: dict[str, Any],
 ) -> None:
     """A token failing any one validation check is refused, and nothing is read from the bucket."""
-    response = client.get(
-        "/manifests/", headers=bearer(make_token(issuer, **overrides))
-    )
+    response = token_client.get("/", headers=bearer(make_token(issuer, **overrides)))
 
     assert response.status_code == 403, case
-    assert response.get_json() == {"error": "Please log in."}
     list_files.assert_not_called()
 
 
 @pytest.mark.parametrize(("method", "path"), ROUTES)
 def test_every_route_rejects_a_missing_token(
-    client: FlaskClient, list_files: MagicMock, method: str, path: str
+    token_client: TestClient, list_files: MagicMock, method: str, path: str
 ) -> None:
     """No route can be used without credentials."""
-    response = client.open(path, method=method, json={})
+    response = token_client.request(method, path, json={})
 
-    assert response.status_code == 403
-    assert response.get_json() == {"error": "Please log in."}
+    assert response.status_code == 401
     list_files.assert_not_called()
 
 
 @pytest.mark.parametrize(("method", "path"), ROUTES)
 def test_every_route_rejects_an_invalid_token(
-    client: FlaskClient, issuer: str, list_files: MagicMock, method: str, path: str
+    token_client: TestClient, issuer: str, list_files: MagicMock, method: str, path: str
 ) -> None:
     """No route accepts a token that fails validation."""
     token = make_token(issuer, key=UNKNOWN_KEY)
 
-    response = client.open(path, method=method, headers=bearer(token), json={})
+    response = token_client.request(method, path, headers=bearer(token), json={})
 
     assert response.status_code == 403
-    assert response.get_json() == {"error": "Please log in."}
     list_files.assert_not_called()

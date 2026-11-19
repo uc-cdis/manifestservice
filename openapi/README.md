@@ -1,10 +1,35 @@
-# OpenAPI spec
+# OpenAPI Specification
 
-The [OpenAPI](https://github.com/OAI/OpenAPI-Specification)/[Swagger 2.0](https://swagger.io/) specification of a service is stored in its `swagger.yaml` file. It can be visualized using the Swagger UI at `http://petstore.swagger.io/?url=<swagger.yaml raw URL>`. For example, the documentation found in this folder can be visualized [here](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/manifestservice/master/openapi/swagger.yaml).
+The [OpenAPI 3.1](https://github.com/OAI/OpenAPI-Specification) specification for this service is stored in two formats:
+- `openapi.json`
+- `swagger.yaml` - (backward compatibility)
 
-# To generate the documentation
+## Viewing the Documentation
 
-* update the docstring of the endpoints impacted by the changes;
-* run `python build_openapi.py`;
-* validate the updated `swagger.yaml` using the [Swagger editor](http://editor.swagger.io);
-* git push `swagger.yaml`.
+### Local Development
+When running the service locally, interactive documentation is available at:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **Raw OpenAPI JSON**: http://localhost:8000/openapi.json
+
+### Online Viewer
+The documentation can be visualized using the Swagger UI at:
+`https://petstore.swagger.io/?url=<swagger.yaml raw URL>`
+
+For example: [View current documentation](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/manifestservice/master/openapi/swagger.yaml)
+
+## Generating/Updating the Documentation
+
+FastAPI auto-generates the OpenAPI schema from route definitions, so documentation updates happen automatically when you:
+1. Update route docstrings
+2. Add/modify response examples in route decorators
+3. Change Pydantic models
+
+To regenerate the static files:
+
+```bash
+# Generate both openapi.json and swagger.yaml
+python build_openapi.py
+```
+
+Then validate the updated schema using the [Swagger Editor](https://editor.swagger.io) and commit the changes.

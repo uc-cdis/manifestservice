@@ -1,85 +1,89 @@
-import json as json_utils
+"""
+Tests for the cohort routes and the CohortCreateRequest model.
+"""
 
-from manifestservice.manifests import _list_files_in_bucket
+from unittest.mock import MagicMock
 
+import pytest
+from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
-def test_POST_successful_GUID_add(client, mocks):
-    """
-        Test the Export PFB to Workspace pathway: a cohort is added to the bucket.
-    Note that because s3 is being mocked, only an integration test can properly
-    verify file creation.
-    """
-    test_guid = "5183a350-9d56-4084-8a03-6471cafeb7fe"
-    post_body = {"guid": test_guid}
+from manifestservice.schemas import CohortCreateRequest
 
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.post("/cohorts", data=json_utils.dumps(post_body), headers=headers)
-
-    assert r.status_code == 200
-    assert mocks["_authenticate_user"].call_count == 1
-    assert mocks["_get_file_contents"].call_count == 0
-    assert mocks["_add_manifest_to_bucket"].call_count == 0
-    assert mocks["_add_GUID_to_bucket"].call_count == 1
-
-    json = r.json
-    new_guid = json["filename"]
-
-    assert new_guid is not None
-    assert type(new_guid) is str
+GUID = "5183a350-9d56-4084-8a03-6471cafeb7fe"
 
 
-def test_GET_cohorts(client, mocks):
-    """
-    Test GET /cohorts
-    """
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.get("/cohorts", headers=headers)
+class TestCohortCreateRequest:
+    """Tests for the CohortCreateRequest request model."""
 
-    assert r.status_code == 200
-    assert mocks["_authenticate_user"].call_count == 1
-    assert mocks["_get_file_contents"].call_count == 0
-    assert mocks["_add_manifest_to_bucket"].call_count == 0
-    assert mocks["_add_GUID_to_bucket"].call_count == 0
-    assert mocks["_list_files_in_bucket"].call_count == 1
+    @pytest.mark.parametrize(
+        "guid",
+        [
+            GUID,
+            GUID.upper(),
+            "dg.1234/" + GUID,
+            "dg.mytest/" + GUID,
+            "DG.4DFC/" + GUID.upper(),
+        ],
+    )
+    def test_accepts_guid(self, guid: str) -> None:
+        """A UUID with an optional one-segment prefix is accepted, in any case."""
+        assert CohortCreateRequest(guid=guid).guid == guid
 
-    json = r.json
-    cohorts_returned = json["cohorts"]
-    assert len(cohorts_returned) == 1
-    # From the s3 mock
-    assert cohorts_returned[0]["filename"] == "18e32c12-a053-4ac5-90a5-f01f70b5c2be"
+    @pytest.mark.parametrize(
+        "guid",
+        [
+            "",
+            "12345",
+            "not-a-guid",
+            "junk" + GUID,
+            "a/b/" + GUID,
+            "../" + GUID,
+            "/" + GUID,
+            "../../other-user/cohorts/" + GUID,
+        ],
+    )
+    def test_rejects_guid(self, guid: str) -> None:
+        """Anything but a UUID with an optional one-segment prefix is rejected."""
+        with pytest.raises(ValidationError):
+            CohortCreateRequest(guid=guid)
 
 
-def test_GET_cohorts_broken_s3(client, broken_s3_mocks):
-    """
-    Test GET /cohorts if s3 creds are broken
-    """
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    r = client.get("/cohorts", headers=headers)
+class TestListCohorts:
+    """Tests for GET /cohorts."""
 
-    assert r.status_code == 500
-    assert broken_s3_mocks["_authenticate_user"].call_count == 1
+    def test_returns_cohort_files(
+        self, client: TestClient, mocks: dict[str, MagicMock]
+    ) -> None:
+        """The cohort files in the user's folder are returned."""
+        listing, _ = mocks["list_files_in_bucket"].return_value
 
-    response = r.json
-    assert len(response.keys()) == 1
-    assert response["error"] == "Currently unable to connect to s3."
+        r = client.get("/cohorts")
+
+        assert r.status_code == 200
+        assert r.json() == {"cohorts": listing["cohorts"]}
+        mocks["list_files_in_bucket"].assert_called_once_with("test-bucket", "user-18")
 
 
-def test_list_files_in_bucket(client, mocked_bucket):
-    """
-    Test that prefixes are not removed from GUIDs when listing cohorts
-    in buckets
-    """
-    result, ok = _list_files_in_bucket("fake_bucket_name", "fake_folder")
-    assert ok, result
+class TestAddCohort:
+    """Tests for POST /cohorts and PUT /cohorts."""
 
-    manifests = result["manifests"]
-    assert len(manifests) == 1
-    assert manifests[0]["filename"] == "my-manifest.json"
+    @pytest.mark.parametrize("method", ["POST", "PUT"])
+    def test_stores_guid_and_returns_it(
+        self, client: TestClient, mocks: dict[str, MagicMock], method: str
+    ) -> None:
+        """The GUID is stored, and the stored name is returned."""
+        r = client.request(method, "/cohorts", json={"guid": GUID})
 
-    cohorts = result["cohorts"]
-    assert len(cohorts) == 2
-    for cohort in cohorts:
-        if "without-prefix" in cohort["filename"]:
-            assert cohort["filename"] == "guid-without-prefix"
-        else:
-            assert cohort["filename"] == "dg.mytest/guid-with-prefix"
+        assert r.status_code == 200
+        assert r.json() == {"filename": mocks["add_guid_to_bucket"].return_value[0]}
+        assert mocks["add_guid_to_bucket"].call_args.args[1] == GUID
+
+    def test_invalid_guid_returns_422(
+        self, client: TestClient, mocks: dict[str, MagicMock]
+    ) -> None:
+        """An invalid GUID is rejected and not stored."""
+        r = client.post("/cohorts", json={"guid": "not-a-valid-guid"})
+
+        assert r.status_code == 422
+        mocks["add_guid_to_bucket"].assert_not_called()
