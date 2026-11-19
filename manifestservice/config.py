@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     - hostname (REQUIRED): The hostname of the Gen3 deployment
     - prefix: Optional folder prefix in S3 bucket
     - oidc_issuer: Derived from hostname (https://{hostname}/user)
+    - authz_audience: Value that an access token's "aud" claim must contain
     - user_api: URL to Fence service, can be overridden via FENCE_URL env var
     - force_issuer: Use USER_API URL for JWT key fetching (default: True)
     """
@@ -55,6 +56,7 @@ class Settings(BaseSettings):
     hostname: str
     prefix: Optional[str] = None
     oidc_issuer: str = ""
+    authz_audience: str = "gen3"
     user_api: str = "http://fence-service/"
     force_issuer: bool = True
 

@@ -7,22 +7,38 @@ NOTE - Flask -> FastAPI migration notes:
 - User folder name function moved here
 """
 
+from collections.abc import Awaitable, Callable
 from typing import Annotated
 
 from authutils.token.fastapi import access_token
 from fastapi import Depends
 
-from .config import Settings, get_settings
+from manifestservice.config import Settings, get_settings
 
 
-_settings = get_settings()
-_validate_and_get_claims = access_token(
-    "user",
-    "openid",
-    issuer=_settings.oidc_issuer,
-    purpose="access",
-    force_issuer=_settings.user_api if _settings.force_issuer else None,
-)
+def build_token_validator(settings: Settings) -> Callable[..., Awaitable[dict]]:
+    """
+    Build the FastAPI dependency that validates a request's access token.
+
+    Args:
+        settings (Settings): Supplies the issuer, audience, and key URL options.
+
+    Returns:
+        Callable[..., Awaitable[dict]]: A dependency that returns the token's
+        claims, or raises HTTPException (401 with no token, 403 with an
+        invalid one).
+    """
+    return access_token(
+        "user",
+        "openid",
+        audience=settings.authz_audience,
+        issuer=settings.oidc_issuer,
+        purpose="access",
+        force_issuer=settings.user_api if settings.force_issuer else None,
+    )
+
+
+_validate_and_get_claims = build_token_validator(get_settings())
 
 # Annotated types for shared dependencies
 # https://fastapi.tiangolo.com/tutorial/dependencies/#share-annotated-dependencies

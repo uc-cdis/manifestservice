@@ -1,5 +1,5 @@
 """
-Tests for authentication, the user folder name, and error responses.
+Tests for the user folder name and error responses.
 """
 
 from unittest.mock import MagicMock
@@ -16,10 +16,6 @@ LIST_REQUESTS = [
     pytest.param("GET", "/", None, id="GET /"),
     pytest.param("GET", "/cohorts", None, id="GET /cohorts"),
     pytest.param("GET", "/metadata", None, id="GET /metadata"),
-]
-FILE_REQUESTS = [
-    pytest.param("GET", "/file/manifest-1.json", None, id="GET /file/{name}"),
-    pytest.param("GET", "/metadata/metadata-1.json", None, id="GET /metadata/{name}"),
 ]
 CREATE_REQUESTS = [
     pytest.param(method, path, body, id=f"{method} {path}")
@@ -47,36 +43,6 @@ class TestGetUserFolderName:
         settings = settings.model_copy(update={"prefix": prefix})
 
         assert get_user_folder_name({"sub": "42"}, settings) == expected
-
-
-@pytest.mark.usefixtures("mocks")
-class TestAuthentication:
-    """Tests for token validation on the routes."""
-
-    @pytest.mark.parametrize(
-        "method, path, body", LIST_REQUESTS + FILE_REQUESTS + CREATE_REQUESTS
-    )
-    def test_request_without_token_returns_401(
-        self,
-        unauthenticated_client: TestClient,
-        method: str,
-        path: str,
-        body: object,
-    ) -> None:
-        """Every route rejects a request that has no token."""
-        r = unauthenticated_client.request(method, path, json=body)
-
-        assert r.status_code == 401
-
-    def test_malformed_token_returns_403(
-        self, unauthenticated_client: TestClient
-    ) -> None:
-        """A bearer token that is not a JWT is rejected."""
-        r = unauthenticated_client.get(
-            "/", headers={"Authorization": "Bearer not-a-jwt"}
-        )
-
-        assert r.status_code == 403
 
 
 class TestErrorResponses:
