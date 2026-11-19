@@ -83,7 +83,6 @@ The service loads configuration from `config.json` (or the path in `MANIFEST_SER
 
 Environment variable overrides:
 - `MANIFEST_SERVICE_CONFIG_PATH` — Path to config file (default: `config.json`)
-- `FENCE_URL` — Override the Fence service URL (default: `http://fence-service/`)
 
 ## Development
 

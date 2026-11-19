@@ -2,9 +2,9 @@
 Tests that access tokens are validated end to end through authutils before any route is served.
 
 Nothing here mocks authutils: tokens are signed with a throwaway RSA key and served from a local
-issuer, so the JWKS fetch, signature check and claim checks all run for real. That is what
-catches an authutils upgrade, or a change to the app's token validator arguments, that changes
-how a token is accepted or rejected.
+issuer, so the OIDC discovery, JWKS fetch, signature check and claim checks all run for real.
+That is what catches an authutils upgrade, or a change to the app's token validator arguments,
+that changes how a token is accepted or rejected.
 
 AWS is mocked, since these tests are about who gets in, not what is stored.
 """

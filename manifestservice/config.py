@@ -48,8 +48,6 @@ class Settings(BaseSettings):
     - prefix: Optional folder prefix in S3 bucket
     - oidc_issuer: Derived from hostname (https://{hostname}/user)
     - authz_audience: Value that an access token's "aud" claim must contain
-    - user_api: URL to Fence service, can be overridden via FENCE_URL env var
-    - force_issuer: Use USER_API URL for JWT key fetching (default: True)
     """
 
     manifest_bucket_name: str
@@ -57,8 +55,6 @@ class Settings(BaseSettings):
     prefix: Optional[str] = None
     oidc_issuer: str = ""
     authz_audience: str = "gen3"
-    user_api: str = "http://fence-service/"
-    force_issuer: bool = True
 
     model_config = SettingsConfigDict(env_prefix="", extra="ignore")
 
@@ -69,7 +65,6 @@ class Settings(BaseSettings):
         Load configuration from JSON file.
 
         OIDC issuer is derived from hostname.
-        Optionally overrides user_api from FENCE_URL environment variable.
         """
         config_path = os.environ.get("MANIFEST_SERVICE_CONFIG_PATH", "config.json")
         validate_config_path(config_path)
@@ -86,9 +81,6 @@ class Settings(BaseSettings):
             lower_key = key.lower()
             if lower_key not in values or values[lower_key] is None:
                 values[lower_key] = value
-
-        if fence_url := os.environ.get("FENCE_URL"):
-            values["user_api"] = fence_url
 
         if hostname := values.get("hostname"):
             values["oidc_issuer"] = f"https://{hostname}/user"

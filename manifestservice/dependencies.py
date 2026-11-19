@@ -20,8 +20,11 @@ def build_token_validator(settings: Settings) -> Callable[..., Awaitable[dict]]:
     """
     Build the FastAPI dependency that validates a request's access token.
 
+    Fence's signing keys are fetched from the issuer through OIDC discovery,
+    so the issuer URL must be reachable from inside the pod.
+
     Args:
-        settings (Settings): Supplies the issuer, audience, and key URL options.
+        settings (Settings): Supplies the issuer and the audience.
 
     Returns:
         Callable[..., Awaitable[dict]]: A dependency that returns the token's
@@ -34,7 +37,6 @@ def build_token_validator(settings: Settings) -> Callable[..., Awaitable[dict]]:
         audience=settings.authz_audience,
         issuer=settings.oidc_issuer,
         purpose="access",
-        force_issuer=settings.user_api if settings.force_issuer else None,
     )
 
 
